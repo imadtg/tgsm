@@ -2,6 +2,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { afterEach, describe, expect, test } from 'bun:test'
+import pkg from '../package.json'
 
 interface FixtureFile {
   account: {
@@ -46,6 +47,12 @@ afterEach(async () => {
 })
 
 describe('tgsm CLI fixture backend', () => {
+  test('--version prints the installed CLI version', async () => {
+    const shown = await expectCliSuccess(['--version'])
+
+    expect(shown.stdout.trim()).toBe(pkg.version)
+  })
+
   test('sync + saved-dialogs list --json returns structured dialogs', async () => {
     const { fixturePath, homeDir } = await setupFixture()
 

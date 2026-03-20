@@ -20,6 +20,7 @@ import {
   formatSyncResult,
   formatThread,
 } from './format'
+import pkg from '../package.json'
 
 interface GlobalOptions {
   json?: boolean
@@ -34,6 +35,7 @@ const program = new Command()
 program
   .name('tgsm')
   .description('Retrieval-first Telegram Saved Messages CLI')
+  .version(pkg.version, '-V, --version', 'Display the tgsm version')
   .option('--json', 'Emit JSON instead of default text output')
   .option('--backend <backend>', 'telegram or fixture', 'telegram')
   .option('--fixture <path>', 'Fixture path for the fixture backend')

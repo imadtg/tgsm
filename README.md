@@ -28,13 +28,13 @@ The first public release focuses on read paths only: sync, saved dialogs, messag
 ### npm
 
 ```bash
-npm install -g tgsm
+npm install -g @imadtg/tgsm
 ```
 
 ### bun
 
 ```bash
-bun add -g tgsm
+bun add -g @imadtg/tgsm
 ```
 
 ## Requirements

@@ -1,5 +1,5 @@
 {
-  "name": "tgsm",
+  "name": "@imadtg/tgsm",
   "version": "0.0.1",
   "type": "module",
   "description": "A retrieval-first CLI for navigating Telegram Saved Messages as structured, agent-readable context.",
@@ -23,7 +23,7 @@
     "node": ">=20"
   },
   "bin": {
-    "tgsm": "./dist/index.js"
+    "tgsm": "dist/index.js"
   },
   "main": "./dist/index.js",
   "files": [

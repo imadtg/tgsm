@@ -5,7 +5,7 @@
 ## Install
 
 ```bash
-npm install -g tgsm
+npm install -g @imadtg/tgsm
 ```
 
 ## Quick Start

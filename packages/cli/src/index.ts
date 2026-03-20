@@ -68,7 +68,6 @@ program
             apiId,
             apiHash,
             phone,
-            code: '',
           })
 
           emit(result, options)

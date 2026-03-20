@@ -50,7 +50,13 @@ export class TelegramSource implements TgsmSourceAdapter {
     try {
       const user = await client.start({
         phone: input.phone,
-        code: async () => input.code ?? (await rl.question('Code: ')),
+        code: async () => {
+          if (input.code && input.code.trim().length > 0) {
+            return input.code
+          }
+
+          return rl.question('Code: ')
+        },
         password: async () =>
           input.password ??
           (await rl.question('2FA password (leave empty if not enabled): ')),

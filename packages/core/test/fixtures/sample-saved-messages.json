@@ -1,0 +1,222 @@
+{
+  "account": {
+    "id": "fixture-account",
+    "display_name": "Fixture Account"
+  },
+  "dialogs": [
+    {
+      "saved_peer_id": "self",
+      "kind": "self",
+      "title": "Self",
+      "top_message_id": 20,
+      "top_text_preview": "Self duplicate id marker",
+      "message_count": 9,
+      "pinned": false,
+      "last_synced_at": null
+    },
+    {
+      "saved_peer_id": "user:200",
+      "kind": "peer",
+      "title": "Ali Research",
+      "top_message_id": 20,
+      "top_text_preview": "Peer duplicate id marker",
+      "message_count": 3,
+      "pinned": true,
+      "last_synced_at": null
+    }
+  ],
+  "messages": [
+    {
+      "message_id": 1,
+      "saved_peer_id": "self",
+      "date": "2025-01-15T10:00:00.000Z",
+      "edit_date": null,
+      "text": "Need to learn distributed systems",
+      "from_self": true,
+      "forwarded": false,
+      "forward_origin": null,
+      "reply_to_message_id": null,
+      "reply_to_saved_peer_id": null,
+      "links": [],
+      "media_summary": null,
+      "queued_for_delete": false
+    },
+    {
+      "message_id": 2,
+      "saved_peer_id": "self",
+      "date": "2025-01-15T10:05:00.000Z",
+      "edit_date": null,
+      "text": "This yt video on CRDTs is amazing https://youtube.com/watch?v=crdt",
+      "from_self": true,
+      "forwarded": false,
+      "forward_origin": null,
+      "reply_to_message_id": 1,
+      "reply_to_saved_peer_id": "self",
+      "links": [
+        {
+          "url": "https://youtube.com/watch?v=crdt"
+        }
+      ],
+      "media_summary": null,
+      "queued_for_delete": false
+    },
+    {
+      "message_id": 3,
+      "saved_peer_id": "self",
+      "date": "2025-01-15T10:06:00.000Z",
+      "edit_date": null,
+      "text": "Also related: Jepsen tests",
+      "from_self": true,
+      "forwarded": false,
+      "forward_origin": null,
+      "reply_to_message_id": 2,
+      "reply_to_saved_peer_id": "self",
+      "links": [],
+      "media_summary": null,
+      "queued_for_delete": false
+    },
+    {
+      "message_id": 4,
+      "saved_peer_id": "self",
+      "date": "2025-01-15T10:07:00.000Z",
+      "edit_date": null,
+      "text": "Unrelated grocery list",
+      "from_self": true,
+      "forwarded": false,
+      "forward_origin": null,
+      "reply_to_message_id": null,
+      "reply_to_saved_peer_id": null,
+      "links": [],
+      "media_summary": null,
+      "queued_for_delete": false
+    },
+    {
+      "message_id": 5,
+      "saved_peer_id": "self",
+      "date": "2025-01-15T10:08:00.000Z",
+      "edit_date": null,
+      "text": "Rapid fire thought A",
+      "from_self": true,
+      "forwarded": false,
+      "forward_origin": null,
+      "reply_to_message_id": null,
+      "reply_to_saved_peer_id": null,
+      "links": [],
+      "media_summary": null,
+      "queued_for_delete": false
+    },
+    {
+      "message_id": 6,
+      "saved_peer_id": "self",
+      "date": "2025-01-15T10:09:00.000Z",
+      "edit_date": null,
+      "text": "Rapid fire thought B",
+      "from_self": true,
+      "forwarded": false,
+      "forward_origin": null,
+      "reply_to_message_id": null,
+      "reply_to_saved_peer_id": null,
+      "links": [],
+      "media_summary": null,
+      "queued_for_delete": false
+    },
+    {
+      "message_id": 7,
+      "saved_peer_id": "self",
+      "date": "2025-01-15T10:10:00.000Z",
+      "edit_date": null,
+      "text": "Rapid fire thought C",
+      "from_self": true,
+      "forwarded": false,
+      "forward_origin": null,
+      "reply_to_message_id": null,
+      "reply_to_saved_peer_id": null,
+      "links": [],
+      "media_summary": null,
+      "queued_for_delete": false
+    },
+    {
+      "message_id": 8,
+      "saved_peer_id": "self",
+      "date": "2025-01-15T10:11:00.000Z",
+      "edit_date": null,
+      "text": "Actually this conflicts with the prior note",
+      "from_self": true,
+      "forwarded": false,
+      "forward_origin": null,
+      "reply_to_message_id": 2,
+      "reply_to_saved_peer_id": "self",
+      "links": [],
+      "media_summary": null,
+      "queued_for_delete": false
+    },
+    {
+      "message_id": 20,
+      "saved_peer_id": "self",
+      "date": "2025-01-15T10:12:00.000Z",
+      "edit_date": null,
+      "text": "Self duplicate id marker",
+      "from_self": true,
+      "forwarded": false,
+      "forward_origin": null,
+      "reply_to_message_id": null,
+      "reply_to_saved_peer_id": null,
+      "links": [],
+      "media_summary": null,
+      "queued_for_delete": false
+    },
+    {
+      "message_id": 10,
+      "saved_peer_id": "user:200",
+      "date": "2025-01-16T11:00:00.000Z",
+      "edit_date": null,
+      "text": "Forwarded article about event sourcing",
+      "from_self": false,
+      "forwarded": true,
+      "forward_origin": {
+        "saved_peer_id": "channel:300",
+        "title": "Event Sourcing Channel",
+        "message_id": 44
+      },
+      "reply_to_message_id": null,
+      "reply_to_saved_peer_id": null,
+      "links": [],
+      "media_summary": null,
+      "queued_for_delete": false
+    },
+    {
+      "message_id": 11,
+      "saved_peer_id": "user:200",
+      "date": "2025-01-16T11:05:00.000Z",
+      "edit_date": null,
+      "text": "My note on that article",
+      "from_self": true,
+      "forwarded": false,
+      "forward_origin": null,
+      "reply_to_message_id": 10,
+      "reply_to_saved_peer_id": "user:200",
+      "links": [],
+      "media_summary": null,
+      "queued_for_delete": false
+    },
+    {
+      "message_id": 20,
+      "saved_peer_id": "user:200",
+      "date": "2025-01-16T11:10:00.000Z",
+      "edit_date": null,
+      "text": "Peer duplicate id marker",
+      "from_self": false,
+      "forwarded": true,
+      "forward_origin": {
+        "saved_peer_id": "user:200",
+        "title": "Ali Research",
+        "message_id": 20
+      },
+      "reply_to_message_id": null,
+      "reply_to_saved_peer_id": null,
+      "links": [],
+      "media_summary": null,
+      "queued_for_delete": false
+    }
+  ]
+}

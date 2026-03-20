@@ -1,0 +1,9 @@
+node_modules
+.DS_Store
+.env
+.tgsm
+dist
+coverage
+*.tgsm-session
+*.log
+*.tgz

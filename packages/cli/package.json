@@ -1,0 +1,48 @@
+{
+  "name": "tgsm",
+  "version": "0.0.1",
+  "type": "module",
+  "description": "A retrieval-first CLI for navigating Telegram Saved Messages as structured, agent-readable context.",
+  "license": "MIT",
+  "homepage": "https://github.com/imadtg/tgsm",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/imadtg/tgsm.git"
+  },
+  "bugs": {
+    "url": "https://github.com/imadtg/tgsm/issues"
+  },
+  "keywords": [
+    "telegram",
+    "saved-messages",
+    "cli",
+    "agents",
+    "mtproto"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "tgsm": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "test": "bun test"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@mtcute/node": "^0.28.2",
+    "commander": "^14.0.1"
+  },
+  "devDependencies": {
+    "@tgsm/core": "workspace:*"
+  }
+}

@@ -63,15 +63,12 @@ program
           const apiId = Number(await rl.question('API ID: '))
           const apiHash = await rl.question('API Hash: ')
           const phone = await rl.question('Phone: ')
-          const code = await rl.question('Code: ')
-          const password = await rl.question('2FA password (optional): ')
 
           const result = await service.authLogin({
             apiId,
             apiHash,
             phone,
-            code,
-            password: password || undefined,
+            code: '',
           })
 
           emit(result, options)

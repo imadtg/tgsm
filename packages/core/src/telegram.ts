@@ -1,4 +1,5 @@
 import path from 'node:path'
+import { createInterface } from 'node:readline/promises'
 import { readFile, writeFile } from 'node:fs/promises'
 import { TelegramClient, getMarkedPeerId, type tl } from '@mtcute/node'
 import { TgsmError } from './errors'
@@ -41,12 +42,28 @@ export class TelegramSource implements TgsmSourceAdapter {
       apiHash: config.apiHash,
       storage: path.join(accountDir, 'mtcute-session'),
     })
+    const rl = createInterface({
+      input: process.stdin,
+      output: process.stderr,
+    })
 
     try {
       const user = await client.start({
         phone: input.phone,
-        code: input.code,
-        password: input.password || undefined,
+        code: async () => input.code ?? (await rl.question('Code: ')),
+        password: async () =>
+          input.password ??
+          (await rl.question('2FA password (leave empty if not enabled): ')),
+        codeSentCallback: async (sentCode) => {
+          const type =
+            typeof sentCode.type === 'string'
+              ? sentCode.type
+              : 'unknown'
+          process.stderr.write(`Login code requested via ${type}.\n`)
+        },
+        invalidCodeCallback: async (type) => {
+          process.stderr.write(`Invalid ${type}, please try again.\n`)
+        },
       })
 
       return {
@@ -63,6 +80,7 @@ export class TelegramSource implements TgsmSourceAdapter {
         retryable: false,
       })
     } finally {
+      rl.close()
       // no-op: client storage/session is managed by mtcute
     }
   }

@@ -187,7 +187,7 @@ export interface TelegramLoginInput {
   apiId: number
   apiHash: string
   phone: string
-  code: string
+  code?: string
   password?: string
 }
 

@@ -14,7 +14,7 @@
     },
     "packages/cli": {
       "name": "@imadtg/tgsm",
-      "version": "0.0.2",
+      "version": "0.0.7",
       "bin": {
         "tgsm": "dist/index.js",
       },

@@ -1,4 +1,5 @@
 import { createInterface } from 'node:readline/promises'
+import { once } from 'node:events'
 import process from 'node:process'
 import { Command } from 'commander'
 import {
@@ -24,6 +25,7 @@ import pkg from '../package.json'
 
 interface GlobalOptions {
   json?: boolean
+  debug?: boolean
   backend?: 'telegram' | 'fixture'
   fixture?: string
   home?: string
@@ -37,6 +39,7 @@ program
   .description('Retrieval-first Telegram Saved Messages CLI')
   .version(pkg.version, '-V, --version', 'Display the tgsm version')
   .option('--json', 'Emit JSON instead of default text output')
+  .option('--debug', 'Emit debug telemetry to stderr')
   .option('--backend <backend>', 'telegram or fixture', 'telegram')
   .option('--fixture <path>', 'Fixture path for the fixture backend')
   .option('--home <path>', 'Override TGSM home directory')
@@ -167,28 +170,7 @@ program
       }),
   )
 
-program.parseAsync(process.argv).catch((error: unknown) => {
-  const tgsmError =
-    error instanceof TgsmError
-      ? error
-      : new TgsmError({
-          code: 'UNEXPECTED_ERROR',
-          message: error instanceof Error ? error.message : 'Unexpected error',
-          retryable: false,
-        })
-
-  const options = program.opts<GlobalOptions>()
-  if (options.json) {
-    process.stdout.write(`${JSON.stringify(tgsmError.toJSON(), null, 2)}\n`)
-  } else {
-    process.stderr.write(`error: ${tgsmError.message}\n`)
-    if (tgsmError.suggestion) {
-      process.stderr.write(`suggestion: ${tgsmError.suggestion}\n`)
-    }
-  }
-
-  process.exitCode = errorCode(tgsmError.code)
-})
+void main()
 
 async function withService(
   options: GlobalOptions,
@@ -196,6 +178,7 @@ async function withService(
 ): Promise<void> {
   const normalized: Required<GlobalOptions> = {
     json: Boolean(options.json),
+    debug: Boolean(options.debug),
     backend: (options.backend ?? 'telegram') as 'telegram' | 'fixture',
     fixture: options.fixture ?? '',
     home: options.home ?? '',
@@ -210,6 +193,14 @@ async function withService(
   const cachePath = getCachePath({
     homeDir: normalized.home || undefined,
     account: normalized.account,
+  })
+
+  debugLog(normalized, 'cli.service.setup', {
+    backend: normalized.backend,
+    account: normalized.account,
+    cache_path: cachePath,
+    home: normalized.home || undefined,
+    fixture: normalized.fixture || undefined,
   })
 
   const source = resolveSource(normalized)
@@ -233,7 +224,12 @@ function resolveSource(options: Required<GlobalOptions>): TgsmSourceAdapter {
     return new FixtureSource(options.fixture)
   }
 
-  return new TelegramSource()
+  return new TelegramSource({
+    debug: options.debug,
+    logger: (event, fields = {}) => {
+      debugLog(options, event, fields)
+    },
+  })
 }
 
 function emit<T>(
@@ -253,4 +249,77 @@ function errorCode(code: string): number {
   if (code.startsWith('AUTH')) return 3
   if (code.includes('SYNC') || code.includes('TELEGRAM')) return 2
   return 1
+}
+
+function debugLog(
+  options: Pick<Required<GlobalOptions>, 'debug'>,
+  event: string,
+  fields: Record<string, unknown> = {},
+): void {
+  if (!options.debug) return
+
+  const detail = Object.entries(fields)
+    .filter(([, value]) => value !== undefined)
+    .map(([key, value]) => `${key}=${formatDebugValue(value)}`)
+    .join(' ')
+
+  process.stderr.write(
+    `[tgsm debug ${new Date().toISOString()}] ${event}${detail ? ` ${detail}` : ''}\n`,
+  )
+}
+
+function formatDebugValue(value: unknown): string {
+  if (typeof value === 'string') return JSON.stringify(value)
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value)
+  if (value === null) return 'null'
+
+  try {
+    return JSON.stringify(value)
+  } catch {
+    return String(value)
+  }
+}
+
+async function main(): Promise<void> {
+  let exitCode = 0
+
+  try {
+    await program.parseAsync(process.argv)
+  } catch (error: unknown) {
+    const tgsmError =
+      error instanceof TgsmError
+        ? error
+        : new TgsmError({
+            code: 'UNEXPECTED_ERROR',
+            message: error instanceof Error ? error.message : 'Unexpected error',
+            retryable: false,
+          })
+
+    const options = program.opts<GlobalOptions>()
+    if (options.json) {
+      process.stdout.write(`${JSON.stringify(tgsmError.toJSON(), null, 2)}\n`)
+    } else {
+      process.stderr.write(`error: ${tgsmError.message}\n`)
+      if (tgsmError.suggestion) {
+        process.stderr.write(`suggestion: ${tgsmError.suggestion}\n`)
+      }
+    }
+
+    exitCode = errorCode(tgsmError.code)
+  }
+
+  await flushStreams()
+  process.exit(exitCode)
+}
+
+async function flushStreams(): Promise<void> {
+  await Promise.all([flushStream(process.stdout), flushStream(process.stderr)])
+}
+
+async function flushStream(stream: NodeJS.WriteStream): Promise<void> {
+  if (!stream.writableNeedDrain) {
+    return
+  }
+
+  await once(stream, 'drain')
 }

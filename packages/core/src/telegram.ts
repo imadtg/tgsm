@@ -1,7 +1,7 @@
 import path from 'node:path'
 import { createInterface } from 'node:readline/promises'
 import { readFile, writeFile } from 'node:fs/promises'
-import { TelegramClient, getMarkedPeerId, type tl } from '@mtcute/node'
+import { TelegramClient, getMarkedPeerId, networkMiddlewares, type tl } from '@mtcute/node'
 import { TgsmError } from './errors'
 import type {
   AuthStatus,
@@ -26,8 +26,20 @@ interface EntityLookup {
   selfUserId: number
 }
 
+interface TelegramSourceOptions {
+  debug?: boolean
+  logger?: (event: string, fields?: Record<string, unknown>) => void
+}
+
+const TELEGRAM_FLOOD_WAIT_MAX_MS = 30_000
+const TELEGRAM_CONNECT_TIMEOUT_MS = 30_000
+const TELEGRAM_RPC_TIMEOUT_MS = 45_000
+const TELEGRAM_DESTROY_TIMEOUT_MS = 5_000
+
 export class TelegramSource implements TgsmSourceAdapter {
   readonly backend = 'telegram' as const
+
+  constructor(private readonly options: TelegramSourceOptions = {}) {}
 
   async authLogin(accountDir: string, input: TelegramLoginInput): Promise<AuthStatus> {
     const config: TelegramConfig = {
@@ -37,13 +49,15 @@ export class TelegramSource implements TgsmSourceAdapter {
     }
 
     await saveTelegramConfig(accountDir, config)
-    const client = createTelegramClient(accountDir, config)
+    this.debug('auth.config_saved', { account_dir: accountDir, phone: input.phone })
+    const client = createTelegramClient(accountDir, config, this.options)
     const rl = createInterface({
       input: process.stdin,
       output: process.stderr,
     })
 
     try {
+      this.debug('auth.start.begin', { account_dir: accountDir })
       const user = await client.start({
         phone: input.phone,
         code: async () => {
@@ -68,6 +82,7 @@ export class TelegramSource implements TgsmSourceAdapter {
         },
       })
 
+      this.debug('auth.start.done', { user_id: String(user.id), display_name: user.displayName })
       return {
         authenticated: true,
         user: {
@@ -82,8 +97,10 @@ export class TelegramSource implements TgsmSourceAdapter {
         retryable: false,
       })
     } finally {
+      this.debug('auth.cleanup.begin')
       rl.close()
-      await destroyClientQuietly(client)
+      const cleanup = await destroyClientQuietly(client)
+      this.debug('auth.cleanup.done', { status: cleanup })
     }
   }
 
@@ -96,11 +113,17 @@ export class TelegramSource implements TgsmSourceAdapter {
       }
     }
 
-    const client = createTelegramClient(accountDir, config)
+    const client = createTelegramClient(accountDir, config, this.options)
 
     try {
-      await client.start({})
+      this.debug('auth_status.start.begin', { account_dir: accountDir })
+      await withTimeout(
+        client.start({}),
+        TELEGRAM_CONNECT_TIMEOUT_MS,
+        'Timed out while connecting to Telegram.',
+      )
       const me = await client.getMe()
+      this.debug('auth_status.start.done', { user_id: String(me.id), display_name: me.displayName })
       return {
         authenticated: true,
         user: {
@@ -109,12 +132,15 @@ export class TelegramSource implements TgsmSourceAdapter {
         },
       }
     } catch {
+      this.debug('auth_status.start.failed')
       return {
         authenticated: false,
         user: null,
       }
     } finally {
-      await destroyClientQuietly(client)
+      this.debug('auth_status.cleanup.begin')
+      const cleanup = await destroyClientQuietly(client)
+      this.debug('auth_status.cleanup.done', { status: cleanup })
     }
   }
 
@@ -129,19 +155,40 @@ export class TelegramSource implements TgsmSourceAdapter {
       })
     }
 
-    const client = createTelegramClient(accountDir, config)
+    const client = createTelegramClient(accountDir, config, this.options)
 
     try {
-      const me = await client.start({})
+      this.debug('sync.start.begin', { account_dir: accountDir })
+      const me = await withTimeout(
+        client.start({}),
+        TELEGRAM_CONNECT_TIMEOUT_MS,
+        'Timed out while connecting to Telegram.',
+      )
+      this.debug('sync.start.done', { user_id: String(me.id), display_name: me.displayName })
       const syncedAt = new Date().toISOString()
-      const dialogsResponse = await client.call({
-        _: 'messages.getSavedDialogs',
-        excludePinned: false,
-        offsetDate: 0,
-        offsetId: 0,
-        offsetPeer: { _: 'inputPeerEmpty' },
-        limit: 1000,
-        hash: 0 as never,
+      this.debug('sync.dialogs.begin')
+      const dialogsResponse = await withTimeout(
+        client.call({
+          _: 'messages.getSavedDialogs',
+          excludePinned: false,
+          offsetDate: 0,
+          offsetId: 0,
+          offsetPeer: { _: 'inputPeerEmpty' },
+          limit: 1000,
+          hash: 0 as never,
+        }, {
+          maxRetryCount: 5,
+          floodSleepThreshold: TELEGRAM_FLOOD_WAIT_MAX_MS,
+        }),
+        TELEGRAM_RPC_TIMEOUT_MS,
+        'Timed out while fetching saved dialogs from Telegram.',
+      )
+      this.debug('sync.dialogs.done', {
+        result_type: dialogsResponse._,
+        dialog_count:
+          'dialogs' in dialogsResponse && Array.isArray(dialogsResponse.dialogs)
+            ? dialogsResponse.dialogs.length
+            : 0,
       })
 
       if (dialogsResponse._ === 'messages.savedDialogsNotModified') {
@@ -175,7 +222,17 @@ export class TelegramSource implements TgsmSourceAdapter {
         const peerInput = await client.resolvePeer(getMarkedPeerId(dialog.peer))
         const title = peerTitle(dialog.peer, lookup)
 
-        const messages = await fetchSavedHistory(client, peerInput, lookup)
+        this.debug('sync.dialog_history.begin', {
+          saved_peer_id: savedPeerId,
+          title,
+          top_message_id: dialog.topMessage ?? null,
+        })
+        const messages = await fetchSavedHistory(client, peerInput, lookup, this.options)
+        this.debug('sync.dialog_history.done', {
+          saved_peer_id: savedPeerId,
+          title,
+          message_count: messages.length,
+        })
         const topMessage = messages.find((message) => message.message_id === dialog.topMessage) ?? messages[0] ?? null
 
         dialogs.push({
@@ -207,31 +264,81 @@ export class TelegramSource implements TgsmSourceAdapter {
         synced_at: syncedAt,
       }
     } catch (error) {
+      this.debug('sync.failed', {
+        message: error instanceof Error ? error.message : 'Unknown sync error',
+      })
       throw new TgsmError({
         code: 'TELEGRAM_SYNC_FAILED',
         message: error instanceof Error ? error.message : 'Telegram sync failed.',
         retryable: true,
       })
     } finally {
-      await destroyClientQuietly(client)
+      this.debug('sync.cleanup.begin')
+      const cleanup = await destroyClientQuietly(client)
+      this.debug('sync.cleanup.done', { status: cleanup })
     }
+  }
+
+  private debug(event: string, fields: Record<string, unknown> = {}): void {
+    if (!this.options.debug) return
+    this.options.logger?.(event, fields)
   }
 }
 
-function createTelegramClient(accountDir: string, config: TelegramConfig): TelegramClient {
-  return new TelegramClient({
+function createTelegramClient(
+  accountDir: string,
+  config: TelegramConfig,
+  options: TelegramSourceOptions,
+): TelegramClient {
+  const client = new TelegramClient({
     apiId: config.apiId,
     apiHash: config.apiHash,
     storage: path.join(accountDir, 'mtcute-session'),
     logLevel: 0,
+    network: {
+      middlewares: networkMiddlewares.basic({
+        floodWaiter: {
+          maxWait: TELEGRAM_FLOOD_WAIT_MAX_MS,
+          maxRetries: 5,
+          onBeforeWait: (ctx, seconds) => {
+            options.logger?.('telegram.flood_wait', {
+              seconds,
+              method: ctx.request._,
+            })
+          },
+        },
+      }),
+    },
   })
+
+  if (options.debug) {
+    client.onConnectionState.add((state) => {
+      options.logger?.('telegram.connection_state', { state })
+    })
+    client.onError.add((error) => {
+      options.logger?.('telegram.client_error', {
+        message: error.message,
+        name: error.name,
+      })
+    })
+  }
+
+  return client
 }
 
-async function destroyClientQuietly(client: TelegramClient): Promise<void> {
+async function destroyClientQuietly(client: TelegramClient): Promise<'destroyed' | 'timed_out' | 'failed'> {
   try {
-    await client.destroy()
-  } catch {
-    // Best-effort cleanup only. The session is already persisted on disk.
+    await withTimeout(
+      client.destroy(),
+      TELEGRAM_DESTROY_TIMEOUT_MS,
+      'Timed out while closing Telegram client.',
+    )
+    return 'destroyed'
+  } catch (error) {
+    if (error instanceof Error && error.message === 'Timed out while closing Telegram client.') {
+      return 'timed_out'
+    }
+    return 'failed'
   }
 }
 
@@ -239,23 +346,47 @@ async function fetchSavedHistory(
   client: TelegramClient,
   peer: tl.TypeInputPeer,
   lookup: EntityLookup,
+  options: TelegramSourceOptions,
 ): Promise<CacheMessageRecord[]> {
   let offsetId = 0
   let offsetDate = 0
   const records = new Map<string, CacheMessageRecord>()
+  let pages = 0
 
   while (true) {
-    const history = await client.call({
-      _: 'messages.getSavedHistory',
-      peer,
-      offsetId,
-      offsetDate,
-      addOffset: 0,
-      limit: 100,
-      maxId: 0,
-      minId: 0,
-      hash: 0 as never,
-    })
+    pages += 1
+    if (options.debug) {
+      options.logger?.('sync.dialog_history.page.begin', {
+        page: pages,
+        offset_id: offsetId,
+        offset_date: offsetDate,
+      })
+    }
+    const history = await withTimeout(
+      client.call({
+        _: 'messages.getSavedHistory',
+        peer,
+        offsetId,
+        offsetDate,
+        addOffset: 0,
+        limit: 100,
+        maxId: 0,
+        minId: 0,
+        hash: 0 as never,
+      }, {
+        maxRetryCount: 5,
+        floodSleepThreshold: TELEGRAM_FLOOD_WAIT_MAX_MS,
+      }),
+      TELEGRAM_RPC_TIMEOUT_MS,
+      'Timed out while fetching saved history from Telegram.',
+    )
+    if (options.debug) {
+      options.logger?.('sync.dialog_history.page.done', {
+        page: pages,
+        result_type: history._,
+        message_count: 'messages' in history ? history.messages.length : 0,
+      })
+    }
 
     if (!('messages' in history)) {
       break
@@ -447,4 +578,27 @@ async function saveTelegramConfig(accountDir: string, config: TelegramConfig): P
     `${JSON.stringify(config, null, 2)}\n`,
     'utf8',
   )
+}
+
+async function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  message: string,
+): Promise<T> {
+  let timer: NodeJS.Timeout | undefined
+
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_, reject) => {
+        timer = setTimeout(() => {
+          reject(new Error(message))
+        }, timeoutMs)
+      }),
+    ])
+  } finally {
+    if (timer) {
+      clearTimeout(timer)
+    }
+  }
 }

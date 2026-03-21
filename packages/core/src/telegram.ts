@@ -37,11 +37,7 @@ export class TelegramSource implements TgsmSourceAdapter {
     }
 
     await saveTelegramConfig(accountDir, config)
-    const client = new TelegramClient({
-      apiId: config.apiId,
-      apiHash: config.apiHash,
-      storage: path.join(accountDir, 'mtcute-session'),
-    })
+    const client = createTelegramClient(accountDir, config)
     const rl = createInterface({
       input: process.stdin,
       output: process.stderr,
@@ -87,7 +83,7 @@ export class TelegramSource implements TgsmSourceAdapter {
       })
     } finally {
       rl.close()
-      // no-op: client storage/session is managed by mtcute
+      await destroyClientQuietly(client)
     }
   }
 
@@ -100,11 +96,7 @@ export class TelegramSource implements TgsmSourceAdapter {
       }
     }
 
-    const client = new TelegramClient({
-      apiId: config.apiId,
-      apiHash: config.apiHash,
-      storage: path.join(accountDir, 'mtcute-session'),
-    })
+    const client = createTelegramClient(accountDir, config)
 
     try {
       await client.start({})
@@ -122,7 +114,7 @@ export class TelegramSource implements TgsmSourceAdapter {
         user: null,
       }
     } finally {
-      // no-op: client storage/session is managed by mtcute
+      await destroyClientQuietly(client)
     }
   }
 
@@ -137,11 +129,7 @@ export class TelegramSource implements TgsmSourceAdapter {
       })
     }
 
-    const client = new TelegramClient({
-      apiId: config.apiId,
-      apiHash: config.apiHash,
-      storage: path.join(accountDir, 'mtcute-session'),
-    })
+    const client = createTelegramClient(accountDir, config)
 
     try {
       const me = await client.start({})
@@ -225,8 +213,25 @@ export class TelegramSource implements TgsmSourceAdapter {
         retryable: true,
       })
     } finally {
-      // no-op: client storage/session is managed by mtcute
+      await destroyClientQuietly(client)
     }
+  }
+}
+
+function createTelegramClient(accountDir: string, config: TelegramConfig): TelegramClient {
+  return new TelegramClient({
+    apiId: config.apiId,
+    apiHash: config.apiHash,
+    storage: path.join(accountDir, 'mtcute-session'),
+    logLevel: 0,
+  })
+}
+
+async function destroyClientQuietly(client: TelegramClient): Promise<void> {
+  try {
+    await client.destroy()
+  } catch {
+    // Best-effort cleanup only. The session is already persisted on disk.
   }
 }
 

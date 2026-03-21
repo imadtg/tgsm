@@ -53,6 +53,22 @@ describe('tgsm CLI fixture backend', () => {
     expect(shown.stdout.trim()).toBe(pkg.version)
   })
 
+  test('auth status uses the human formatter instead of raw object output', async () => {
+    const { fixturePath } = await setupFixture()
+    const shown = await expectCliSuccess([
+      '--backend',
+      'fixture',
+      '--fixture',
+      fixturePath,
+      'auth',
+      'status',
+    ])
+
+    expect(shown.stdout).toContain('authenticated: true')
+    expect(shown.stdout).toContain('Fixture Account')
+    expect(shown.stdout).not.toContain('[object Object]')
+  })
+
   test('sync + saved-dialogs list --json returns structured dialogs', async () => {
     const { fixturePath, homeDir } = await setupFixture()
 

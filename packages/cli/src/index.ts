@@ -72,7 +72,7 @@ program
             phone,
           })
 
-          emit(result, options)
+          emit(result, options, formatAuthStatus)
         } finally {
           rl.close()
         }

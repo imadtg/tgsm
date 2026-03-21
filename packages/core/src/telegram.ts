@@ -289,7 +289,7 @@ async function fetchSavedHistory(
   return [...records.values()].sort((a, b) => a.date.localeCompare(b.date) || a.message_id - b.message_id)
 }
 
-function normalizeRawMessage(raw: tl.RawMessage | tl.RawMessageService, lookup: EntityLookup): CacheMessageRecord {
+export function normalizeRawMessage(raw: tl.RawMessage | tl.RawMessageService, lookup: EntityLookup): CacheMessageRecord {
   const savedPeerId = savedPeerIdFromPeer(raw.peerId, lookup.selfUserId)
   const replyHeader =
     'replyTo' in raw && raw.replyTo && raw.replyTo._ === 'messageReplyHeader' ? raw.replyTo : null
@@ -305,7 +305,10 @@ function normalizeRawMessage(raw: tl.RawMessage | tl.RawMessageService, lookup: 
     date: new Date(raw.date * 1000).toISOString(),
     edit_date: editDate ? new Date(editDate * 1000).toISOString() : null,
     text,
-    from_self: peerIsSelf('fromId' in raw ? raw.fromId : null, lookup.selfUserId),
+    from_self:
+      ('out' in raw ? Boolean(raw.out) : false) ||
+      peerIsSelf('fromId' in raw ? raw.fromId : null, lookup.selfUserId) ||
+      (savedPeerId === 'self' && !fwdFrom),
     forwarded: Boolean(fwdFrom),
     forward_origin: fwdFrom ? forwardOriginFromHeader(fwdFrom, lookup) : null,
     reply_to_message_id: replyHeader?.replyToMsgId ?? null,

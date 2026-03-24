@@ -1,6 +1,6 @@
 # ROADMAP
 
-`tgsm` is a retrieval-first CLI and core library for navigating Telegram Saved Messages as an agent-readable knowledge substrate.
+`tgsm` is a retrieval-first CLI with an internal core library for navigating Telegram Saved Messages as an agent-readable knowledge substrate.
 
 The sharp basis is not "Telegram automation" in general. It is a compact, dependable read model that lets agents and humans inspect saved dialogs, search messages, reconstruct local context, and traverse reply/backreply structure without guessing how Telegram's UI happens to hide or reveal that information.
 
@@ -54,18 +54,20 @@ The authoritative command and type contracts live in:
 - [Read Model Spec](docs/spec/read-model.md)
 - [Output Contract](docs/spec/output-contract.md)
 - [Architecture Boundaries](docs/spec/architecture-boundaries.md)
+- [Docs Index](docs/README.md)
 
 ## Deferred But Tracked
 
-- [Soft-Delete Proposal](docs/spec/mutations-soft-delete.md)
-- [Open Decisions](docs/open-decisions.md)
+- [Soft Delete Proposal](docs/proposals/soft-delete.md)
+- [Open Decisions](docs/decisions/open-decisions.md)
+- [Backlogs](docs/backlogs/README.md)
 - [Future Ideas](docs/proposals/future-ideas.md)
 
 ## Research Appendices
 
 - [Telegram Capabilities](docs/research/telegram-capabilities.md)
 - [Agent CLI Patterns](docs/research/agent-cli-patterns.md)
-- [Tooling Options](docs/research/tooling-options.md)
+- [Tooling And Packaging](docs/operations/tooling-and-packaging.md)
 
 ## Why This Shape
 
@@ -75,4 +77,4 @@ The previous roadmap mixed product definition, implementation choices, and specu
 - research docs say what informed the choices
 - proposal docs say what may come later
 
-Another engineer should be able to understand the product by reading this file and [Product Spec](docs/spec/product.md) first, then dive only where needed.
+Another engineer should be able to understand the product by reading this file, [Product Spec](docs/spec/product.md), and [Docs Index](docs/README.md) first, then dive only where needed.

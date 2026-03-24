@@ -233,7 +233,10 @@ export class TelegramSource implements TgsmSourceAdapter {
           title,
           message_count: messages.length,
         })
-        const topMessage = messages.find((message) => message.message_id === dialog.topMessage) ?? messages[0] ?? null
+        const topMessage =
+          messages.find((message) => message.message_id === dialog.topMessage) ??
+          messages[messages.length - 1] ??
+          null
 
         dialogs.push({
           saved_peer_id: savedPeerId,

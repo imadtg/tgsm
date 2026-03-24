@@ -2,7 +2,7 @@
 
 ## Product Statement
 
-`tgsm` is a retrieval-first CLI and library for navigating Telegram Saved Messages as structured, agent-readable context.
+`tgsm` is a retrieval-first CLI with an internal core library for navigating Telegram Saved Messages as structured, agent-readable context.
 
 It exists to make a large Saved Messages backlog workable for agents and humans by exposing message neighborhoods, reply/backreply structure, and saved-dialog scope more clearly than Telegram's UI.
 
@@ -81,4 +81,4 @@ Summaries, semantic search, migrations, and alternative clients are compelling, 
 - [Read Model Spec](./read-model.md)
 - [Output Contract](./output-contract.md)
 - [Architecture Boundaries](./architecture-boundaries.md)
-- [Soft-Delete Proposal](./mutations-soft-delete.md)
+- [Soft Delete Proposal](../proposals/soft-delete.md)

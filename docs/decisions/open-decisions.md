@@ -15,20 +15,7 @@ Why this matters:
 - it affects how much freedom the CLI keeps for later formatting improvements
 - it determines whether docs must specify both a text contract and a JSON contract with equal rigor
 
-## 2. Saved Dialog Identity
-
-The read model now includes all Saved Message dialogs, not only the self-authored stream. The unresolved piece is how the CLI should present dialog identity by default:
-
-- raw `saved_peer_id`
-- a stable canonical string plus display label
-- a human label only, with the raw identifier hidden unless requested
-
-Why this matters:
-
-- the choice leaks into filters, output examples, and shell scripting ergonomics
-- saved-dialog identity needs to stay stable even if Telegram display names change
-
-## 3. Future Metadata Channel
+## 2. Future Metadata Channel
 
 The sharp basis excludes in-band metadata editing, but the long-term direction is still open:
 
@@ -42,7 +29,7 @@ Why this matters:
 - native tags may be enough for some use cases
 - edited suffixes are more expressive but much riskier
 
-## 4. Soft-Delete Expiry Policy
+## 3. Soft-Delete Expiry Policy
 
 If the soft-delete proposal graduates later, timeout behavior still needs one product decision:
 
@@ -54,7 +41,7 @@ Why this matters:
 - it determines whether the grace window is a safety buffer or an approval queue
 - it changes user expectations around unattended sessions
 
-## 5. Multi-Account Horizon
+## 4. Multi-Account Horizon
 
 The docs assume one Telegram account for now. What remains open is whether multi-account support should influence the first architecture pass anyway.
 
@@ -68,6 +55,7 @@ Why this matters:
 Until these are explicitly resolved, the working defaults are:
 
 - default output is compact text, with `--json` available
+- dialog identity is exposed through canonical strings such as `self`, `user:<id>`, `chat:<id>`, and `channel:<id>`
 - saved dialogs are part of the core read model
 - no in-band metadata edits in the sharp basis
 - soft delete remains a follow-on proposal

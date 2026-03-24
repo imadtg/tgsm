@@ -22,9 +22,9 @@ This document records externally observed Telegram and library capabilities that
 
 ## TypeScript Library Landscape
 
-### Leading Candidate: `mtcute`
+### Current Implementation: `mtcute`
 
-Why it remains the best current fit:
+Why it is the current fit:
 
 - first-class TypeScript ergonomics
 - runtime variants for Node and Bun

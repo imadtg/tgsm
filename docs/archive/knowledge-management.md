@@ -4,7 +4,7 @@ The earlier knowledge-management doc captured useful motivation, but it pushed e
 
 Use:
 
-- [Product Spec](./spec/product.md) for the sharp basis
-- [Future Ideas](./proposals/future-ideas.md) for export, migration, semantic, and alternate-client directions
+- [Product Spec](../spec/product.md) for the sharp basis
+- [Future Ideas](../proposals/future-ideas.md) for export, migration, semantic, and alternate-client directions
 
 Those ideas are preserved, but they are now intentionally downstream of the retrieval model.

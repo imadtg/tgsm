@@ -52,6 +52,11 @@ Required fields:
 - `target`: `MessageRef | null`
 - `status`: `resolved` | `missing` | `not_fetched`
 
+Current implementation note:
+
+- today's full-cache implementation emits `resolved` or `missing`
+- `not_fetched` is reserved for future partial-fetch or mixed-cache backends
+
 ### `BackreplyEdgeSummary`
 
 One immediate reverse reply edge pointing to a direct child reply.
@@ -203,7 +208,7 @@ If one message qualifies for multiple roles, it appears once and lists multiple 
 
 - Forwarded or bookmarked messages must preserve origin context when known.
 - A forwarded item remains part of a saved dialog even if the origin lies elsewhere.
-- Human output should show origin compactly; JSON should expose it structurally.
+- Human output should show origin compactly when it is available and helpful; JSON should expose it structurally.
 
 ## Deletion Visibility Rules
 

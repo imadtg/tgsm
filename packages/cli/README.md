@@ -5,7 +5,7 @@
 ## Install
 
 ```bash
-npm install -g @imadtg/tgsm
+bun add -g @imadtg/tgsm
 ```
 
 ## Quick Start
@@ -17,6 +17,12 @@ tgsm saved-dialogs list
 tgsm messages list
 tgsm messages get 42
 tgsm messages get 42 --json
+```
+
+For sync debugging:
+
+```bash
+tgsm --debug sync
 ```
 
 ## Fixture Backend
@@ -39,8 +45,26 @@ tgsm messages context <id>
 tgsm threads inspect <id>
 ```
 
+## Global Flags
+
+```bash
+--json
+--debug
+--backend <telegram|fixture>
+--fixture <path>
+--home <path>
+--account <name>
+```
+
+## Version
+
+```bash
+tgsm --version
+tgsm -V
+```
+
 ## Docs
 
-Repository and full guide:
+Repository, full guide, and docs map:
 
 - <https://github.com/imadtg/tgsm>

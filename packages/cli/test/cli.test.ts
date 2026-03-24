@@ -146,6 +146,37 @@ describe('tgsm CLI fixture backend', () => {
     expect(shown.stdout).toContain('chronology_before:')
     expect(shown.stdout).toContain('chronology_after:')
   })
+
+  test('messages get renders forwarded origin when known', async () => {
+    const { fixturePath, homeDir } = await setupFixture()
+
+    await expectCliSuccess([
+      '--backend',
+      'fixture',
+      '--fixture',
+      fixturePath,
+      '--home',
+      homeDir,
+      'sync',
+    ])
+
+    const shown = await expectCliSuccess([
+      '--backend',
+      'fixture',
+      '--fixture',
+      fixturePath,
+      '--home',
+      homeDir,
+      'messages',
+      'get',
+      '10',
+      '--dialog',
+      'channel:42',
+    ])
+
+    expect(shown.stdout).toContain('forwarded: true')
+    expect(shown.stdout).toContain('origin: Interesting Channel channel:42 #99')
+  })
 })
 
 async function setupFixture(): Promise<{ fixturePath: string; homeDir: string }> {

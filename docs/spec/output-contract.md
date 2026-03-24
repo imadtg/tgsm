@@ -29,6 +29,11 @@ Both modes must expose the same semantics. Text mode is not a lossy "pretty prin
 - keep previews short and bounded
 - reserve `stderr` for diagnostics and operational noise
 
+Current implementation note:
+
+- JSON mode is the stricter interchange contract
+- text mode is stable at the section-and-label level, but still intentionally lighter-weight than JSON
+
 ### Example Shape: `messages get`
 
 ```text
@@ -79,9 +84,13 @@ chronology_after:
 
 ## Filtering And Projection
 
-- field projection is allowed with `--fields`
-- projections must work in both text and JSON modes
-- projection must not alter the underlying retrieval semantics
+Field projection is a plausible future extension, but it is not part of the current CLI surface.
+
+If added later:
+
+- it should work in both text and JSON modes
+- it must not alter the underlying retrieval semantics
+- it should be documented in both the README and command help, not only here
 
 ## Paging And Cursors
 

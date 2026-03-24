@@ -10,8 +10,8 @@ Why:
 
 Use these instead:
 
-- [Read Model Spec](./spec/read-model.md) for canonical entities and response shapes
-- [Output Contract](./spec/output-contract.md) for output behavior
-- [ROADMAP](../ROADMAP.md) for the near-term public surface
+- [Read Model Spec](../spec/read-model.md) for canonical entities and response shapes
+- [Output Contract](../spec/output-contract.md) for output behavior
+- [ROADMAP](../../ROADMAP.md) for the near-term public surface
 
 The command surface should now be derived from the spec, not the other way around.

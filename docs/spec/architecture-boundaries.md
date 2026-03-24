@@ -19,7 +19,7 @@ This document defines the architectural shape required by the product spec witho
 - fetch message details needed for cache hydration
 - remain replaceable behind a narrow interface
 
-The product spec does not require a specific library, though [tooling research](../research/tooling-options.md) records the current lean toward mtcute and Effect-based services.
+Current implementation uses `mtcute`. The product spec still cares more about the adapter boundary than the specific library, but this is no longer hypothetical.
 
 ### Local Cache And Indexes
 
@@ -60,17 +60,16 @@ Additional packages such as bot or web are valid future consumers, but they are 
 
 ## Dependency Strategy
 
-- implementation choices such as Bun workspaces, Turborepo, Changesets, and Effect.ts remain options, not product requirements
+- current implementation uses Bun workspaces, Changesets, `commander`, and `mtcute`
+- these are implementation facts today, not user-facing product requirements
 - the architecture should support dependency injection around Telegram access and mutation boundaries
 - the high-level docs should describe seams and responsibilities rather than commit every seam to one framework
 
 ## What This Document Intentionally Does Not Lock In
 
-- exact workspace layout
-- exact CLI framework
-- exact database library
+- exact future database layer
 - release automation details
 - bot/web package timelines
 - semantic search infrastructure
 
-Those belong in research or future proposals until the read model is proven.
+Those belong in implementation docs, research follow-ups, or future proposals until they are proven and stable.

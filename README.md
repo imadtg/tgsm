@@ -2,6 +2,8 @@
 
 `tgsm` is a retrieval-first CLI for navigating Telegram Saved Messages as structured, agent-readable context.
 
+The documentation index and authority map live in [docs/README.md](docs/README.md).
+
 It is built for two modes of use:
 
 - real Telegram access through MTProto
@@ -25,16 +27,16 @@ The first public release focuses on read paths only: sync, saved dialogs, messag
 
 ## Install
 
-### npm
-
-```bash
-npm install -g @imadtg/tgsm
-```
-
 ### bun
 
 ```bash
 bun add -g @imadtg/tgsm
+```
+
+### npm
+
+```bash
+npm install -g @imadtg/tgsm
 ```
 
 ## Requirements
@@ -105,10 +107,18 @@ tgsm threads inspect <id> [--dialog <saved_peer_id>]
 
 ```bash
 --json
+--debug
 --backend <telegram|fixture>
 --fixture <path>
 --home <path>
 --account <name>
+```
+
+Version flags:
+
+```bash
+tgsm --version
+tgsm -V
 ```
 
 ## Fixture Backend
@@ -162,13 +172,15 @@ This repo uses:
 - Conventional Commits for commit hygiene
 - Changesets for versioning and publishing
 
-The current package starts at:
+Changesets, not commit messages alone, are the source of truth for future version bumps.
+
+Published package:
 
 ```text
-tgsm@0.0.1
+@imadtg/tgsm
 ```
 
-Changesets, not commit messages alone, are the source of truth for future version bumps.
+For repo internals, operations, backlogs, and proposals, start with [docs/README.md](docs/README.md).
 
 ## Development
 
@@ -196,6 +208,22 @@ Run the CLI from source:
 bun run packages/cli/src/index.ts --help
 ```
 
+## Operational Notes
+
+- Prefer Bun for local installation and release work.
+- If you have multiple global package managers on the same machine, verify which binary your shell resolves:
+
+```bash
+which tgsm
+tgsm --version
+```
+
+- For sync debugging or live operational tracing, use:
+
+```bash
+tgsm --debug sync
+```
+
 ## Status
 
 Implemented in the first public pass:
@@ -217,6 +245,8 @@ Not yet implemented:
 - exports
 - semantic features
 - bot/web UI
+
+Tracked gaps and deferred findings live under [BACKLOG.md](BACKLOG.md) and [docs/backlogs/](docs/backlogs/README.md).
 
 ## License
 

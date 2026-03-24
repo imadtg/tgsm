@@ -64,11 +64,24 @@ export function formatMessagesPage(page: SearchResultPage<MessageListItem>): str
 }
 
 export function formatContextBundle(bundle: MessageContextBundle): string {
+  const forwardOrigin = bundle.target.forward_origin
+    ? [
+        bundle.target.forward_origin.title,
+        bundle.target.forward_origin.saved_peer_id,
+        bundle.target.forward_origin.message_id !== null
+          ? `#${bundle.target.forward_origin.message_id}`
+          : null,
+      ]
+        .filter(Boolean)
+        .join(' ')
+    : null
+
   const lines: string[] = [
     `MESSAGE #${bundle.target.message_id}`,
     `dialog: ${bundle.dialog.saved_peer_id} (${bundle.dialog.title})`,
     `date: ${bundle.target.date}`,
-    `from_self: ${bundle.target.from_self}`,
+    `from_self: ${bundle.target.from_self} forwarded: ${bundle.target.forwarded}`,
+    ...(forwardOrigin ? [`origin: ${forwardOrigin}`] : []),
     `thread: direct_backreplies=${bundle.target.thread.direct_backreply_count} descendant_hint=${bundle.target.thread.descendant_count_hint ?? 0}`,
     '',
     'text:',

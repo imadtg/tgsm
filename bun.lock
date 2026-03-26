@@ -13,11 +13,8 @@
       },
     },
     "packages/cli": {
-      "name": "@imadtg/tgsm",
+      "name": "@tgsm/cli-source",
       "version": "0.0.7",
-      "bin": {
-        "tgsm": "dist/index.js",
-      },
       "dependencies": {
         "@mtcute/node": "^0.28.2",
         "commander": "^14.0.1",
@@ -32,6 +29,45 @@
       "dependencies": {
         "@mtcute/node": "^0.28.2",
       },
+    },
+    "packages/npm-wrapper": {
+      "name": "@imadtg/tgsm",
+      "version": "0.0.7",
+      "bin": {
+        "tgsm": "bin/tgsm",
+      },
+      "optionalDependencies": {
+        "@imadtg/tgsm-darwin-arm64": "0.0.7",
+        "@imadtg/tgsm-darwin-x64": "0.0.7",
+        "@imadtg/tgsm-linux-arm64": "0.0.7",
+        "@imadtg/tgsm-linux-x64": "0.0.7",
+        "@imadtg/tgsm-windows-arm64": "0.0.7",
+        "@imadtg/tgsm-windows-x64": "0.0.7",
+      },
+    },
+    "packages/tgsm-darwin-arm64": {
+      "name": "@imadtg/tgsm-darwin-arm64",
+      "version": "0.0.7",
+    },
+    "packages/tgsm-darwin-x64": {
+      "name": "@imadtg/tgsm-darwin-x64",
+      "version": "0.0.7",
+    },
+    "packages/tgsm-linux-arm64": {
+      "name": "@imadtg/tgsm-linux-arm64",
+      "version": "0.0.7",
+    },
+    "packages/tgsm-linux-x64": {
+      "name": "@imadtg/tgsm-linux-x64",
+      "version": "0.0.7",
+    },
+    "packages/tgsm-windows-arm64": {
+      "name": "@imadtg/tgsm-windows-arm64",
+      "version": "0.0.7",
+    },
+    "packages/tgsm-windows-x64": {
+      "name": "@imadtg/tgsm-windows-x64",
+      "version": "0.0.7",
     },
   },
   "packages": {
@@ -169,7 +205,19 @@
 
     "@fuman/utils": ["@fuman/utils@0.0.19", "", {}, "sha512-4qVrZ9AjKYztLJsNr1Tp7kL48b22dvVLN1iVW+Me8ZSQ0ILN0qknoxjsczVPReF7+GDWgknNxR2l6ggrA4SZyw=="],
 
-    "@imadtg/tgsm": ["@imadtg/tgsm@workspace:packages/cli"],
+    "@imadtg/tgsm": ["@imadtg/tgsm@workspace:packages/npm-wrapper"],
+
+    "@imadtg/tgsm-darwin-arm64": ["@imadtg/tgsm-darwin-arm64@workspace:packages/tgsm-darwin-arm64"],
+
+    "@imadtg/tgsm-darwin-x64": ["@imadtg/tgsm-darwin-x64@workspace:packages/tgsm-darwin-x64"],
+
+    "@imadtg/tgsm-linux-arm64": ["@imadtg/tgsm-linux-arm64@workspace:packages/tgsm-linux-arm64"],
+
+    "@imadtg/tgsm-linux-x64": ["@imadtg/tgsm-linux-x64@workspace:packages/tgsm-linux-x64"],
+
+    "@imadtg/tgsm-windows-arm64": ["@imadtg/tgsm-windows-arm64@workspace:packages/tgsm-windows-arm64"],
+
+    "@imadtg/tgsm-windows-x64": ["@imadtg/tgsm-windows-x64@workspace:packages/tgsm-windows-x64"],
 
     "@inquirer/external-editor": ["@inquirer/external-editor@1.0.3", "", { "dependencies": { "chardet": "^2.1.1", "iconv-lite": "^0.7.0" }, "peerDependencies": { "@types/node": ">=18" }, "optionalPeers": ["@types/node"] }, "sha512-RWbSrDiYmO4LbejWY7ttpxczuwQyZLBUyygsA9Nsv95hpzUWwnNTVQmAq3xuh7vNwCp07UTmE5i11XAEExx4RA=="],
 
@@ -256,6 +304,8 @@
     "@rollup/rollup-win32-x64-gnu": ["@rollup/rollup-win32-x64-gnu@4.59.0", "", { "os": "win32", "cpu": "x64" }, "sha512-laBkYlSS1n2L8fSo1thDNGrCTQMmxjYY5G0WFWjFFYZkKPjsMBsgJfGf4TLxXrF6RyhI60L8TMOjBMvXiTcxeA=="],
 
     "@rollup/rollup-win32-x64-msvc": ["@rollup/rollup-win32-x64-msvc@4.59.0", "", { "os": "win32", "cpu": "x64" }, "sha512-2HRCml6OztYXyJXAvdDXPKcawukWY2GpR5/nxKp4iBgiO3wcoEGkAaqctIbZcNB6KlUQBIqt8VYkNSj2397EfA=="],
+
+    "@tgsm/cli-source": ["@tgsm/cli-source@workspace:packages/cli"],
 
     "@tgsm/core": ["@tgsm/core@workspace:packages/core"],
 

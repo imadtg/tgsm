@@ -7,3 +7,4 @@ coverage
 *.tgsm-session
 *.log
 *.tgz
+packages/tgsm-*/bin

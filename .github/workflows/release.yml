@@ -21,9 +21,14 @@ jobs:
       - run: bunx tsc --noEmit
       - run: bun test
       - run: bun run build
+      - run: ./scripts/smoke-bun-linux-wrapper.sh
       - uses: changesets/action@v1
+        id: changesets
         with:
-          publish: bunx changeset publish
+          version: bunx changeset version
+          publish: bun run publish:release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - if: steps.changesets.outputs.published == 'true'
+        run: bun run verify:published-release $(node -p "require('./packages/npm-wrapper/package.json').version")

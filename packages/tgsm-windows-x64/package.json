@@ -1,0 +1,20 @@
+{
+  "name": "@imadtg/tgsm-windows-x64",
+  "version": "0.0.8",
+  "description": "Windows x64 standalone binary for tgsm.",
+  "license": "MIT",
+  "os": [
+    "win32"
+  ],
+  "cpu": [
+    "x64"
+  ],
+  "files": [
+    "bin",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}

@@ -14,7 +14,7 @@ Current implementation:
 - CLI framework: `commander`
 - versioning and release intent: Changesets
 - commit hygiene: Conventional Commits
-- published package: `@imadtg/tgsm`
+- published wrapper package: `@imadtg/tgsm`
 
 ## Repo Shape
 
@@ -22,8 +22,15 @@ Near-term packages:
 
 - `packages/core`
 - `packages/cli`
+- `packages/npm-wrapper`
+- `packages/tgsm-linux-x64`
+- `packages/tgsm-linux-arm64`
+- `packages/tgsm-darwin-x64`
+- `packages/tgsm-darwin-arm64`
+- `packages/tgsm-windows-x64`
+- `packages/tgsm-windows-arm64`
 
-The release target today is the CLI package only.
+The release target today is a wrapper package plus per-platform binary packages.
 
 ## Local Development
 
@@ -50,6 +57,8 @@ Build packages:
 ```bash
 bun run build
 ```
+
+For the full six-target binary build, use Bun 1.3.1 or newer.
 
 Run the CLI from source:
 
@@ -132,7 +141,8 @@ The intended release model is:
 
 - use Changesets to declare the version bump
 - validate locally with install, typecheck, tests, and build
-- publish the CLI package
+- publish the platform packages first
+- publish the wrapper package last
 - push the corresponding git state
 
 High-level local release sequence:
@@ -143,13 +153,26 @@ High-level local release sequence:
 4. run typecheck
 5. run tests
 6. run build
-7. publish the CLI package
+7. publish the platform packages and wrapper package
 
 Machine-local publishing quirks, if any, belong in [Workarounds](./workarounds.md), not here.
 
 ## Installation And Resolution
 
-The repo documents Bun as the preferred installation path.
+Bun is the preferred workspace tool for development, testing, and release work.
+
+For the published global CLI, the preferred install path is `bun add -g @imadtg/tgsm`.
+
+The generic `@imadtg/tgsm` package is now a launcher that resolves one of the platform packages:
+
+- `@imadtg/tgsm-linux-x64`
+- `@imadtg/tgsm-linux-arm64`
+- `@imadtg/tgsm-darwin-x64`
+- `@imadtg/tgsm-darwin-arm64`
+- `@imadtg/tgsm-windows-x64`
+- `@imadtg/tgsm-windows-arm64`
+
+This keeps the platform-specific standalone executable out of the generic wrapper package and removes the old native Node addon ABI mismatch from the end-user wrapper install path.
 
 Operationally, what matters is that the shell resolves the expected binary and version. Another team should verify that as part of any install or release check rather than assuming one global package manager owns the command name.
 

@@ -1,0 +1,89 @@
+#!/usr/bin/env node
+
+const childProcess = require('node:child_process')
+const fs = require('node:fs')
+const path = require('node:path')
+const os = require('node:os')
+
+const PLATFORM_PACKAGE_NAMES = buildCandidateNames()
+const BINARY_NAME = os.platform() === 'win32' ? 'tgsm.exe' : 'tgsm.exe'
+
+const resolved = findBinary(path.dirname(fs.realpathSync(__filename)))
+
+if (!resolved) {
+  const supported = [
+    'linux-x64',
+    'linux-arm64',
+    'darwin-x64',
+    'darwin-arm64',
+    'windows-x64',
+    'windows-arm64',
+  ].join(', ')
+
+  process.stderr.write(
+    [
+      `error: tgsm does not have an installed binary package for ${os.platform()}-${os.arch()}.`,
+      `expected one of: ${PLATFORM_PACKAGE_NAMES.join(', ')}`,
+      `supported targets: ${supported}`,
+      'reinstall with Bun, npm, or pnpm and ensure optional dependencies were not skipped.',
+      '',
+    ].join('\n'),
+  )
+  process.exit(1)
+}
+
+const result = childProcess.spawnSync(resolved, process.argv.slice(2), { stdio: 'inherit' })
+if (result.error) {
+  process.stderr.write(`error: failed to launch tgsm binary: ${result.error.message}\n`)
+  process.exit(1)
+}
+process.exit(typeof result.status === 'number' ? result.status : 0)
+
+function buildCandidateNames() {
+  const platform = mapPlatform(os.platform())
+  const arch = mapArch(os.arch())
+
+  if (!platform || !arch) return []
+  return [`@imadtg/tgsm-${platform}-${arch}`]
+}
+
+function mapPlatform(platform) {
+  switch (platform) {
+    case 'linux':
+      return 'linux'
+    case 'darwin':
+      return 'darwin'
+    case 'win32':
+      return 'windows'
+    default:
+      return ''
+  }
+}
+
+function mapArch(arch) {
+  switch (arch) {
+    case 'x64':
+      return 'x64'
+    case 'arm64':
+      return 'arm64'
+    default:
+      return ''
+  }
+}
+
+function findBinary(startDir) {
+  let current = startDir
+  for (;;) {
+    const modulesDir = path.join(current, 'node_modules')
+    if (fs.existsSync(modulesDir)) {
+      for (const packageName of PLATFORM_PACKAGE_NAMES) {
+        const candidate = path.join(modulesDir, ...packageName.split('/'), 'bin', BINARY_NAME)
+        if (fs.existsSync(candidate)) return candidate
+      }
+    }
+
+    const parent = path.dirname(current)
+    if (parent === current) return ''
+    current = parent
+  }
+}

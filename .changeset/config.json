@@ -2,7 +2,17 @@
   "$schema": "https://unpkg.com/@changesets/config@3.1.1/schema.json",
   "changelog": false,
   "commit": false,
-  "fixed": [],
+  "fixed": [
+    [
+      "@imadtg/tgsm",
+      "@imadtg/tgsm-linux-x64",
+      "@imadtg/tgsm-linux-arm64",
+      "@imadtg/tgsm-darwin-x64",
+      "@imadtg/tgsm-darwin-arm64",
+      "@imadtg/tgsm-windows-x64",
+      "@imadtg/tgsm-windows-arm64"
+    ]
+  ],
   "linked": [],
   "access": "public",
   "baseBranch": "main",

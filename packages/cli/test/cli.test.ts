@@ -2,7 +2,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { afterEach, describe, expect, test } from 'bun:test'
-import pkg from '../package.json'
+import pkg from '../../npm-wrapper/package.json'
 
 interface FixtureFile {
   account: {

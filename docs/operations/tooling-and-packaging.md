@@ -9,12 +9,21 @@ It is an implementation reference, not an options survey. If a choice changes la
 - workspace/package manager: Bun workspaces
 - Telegram client library: `mtcute`
 - CLI framework: `commander`
-- build tooling: `tsup`
+- build tooling:
+  - `tsup` for the internal source CLI packages
+  - `bun build --compile` for the published platform binaries
 - typecheck: `tsc`
 - test runner: Bun test
 - versioning intent: Changesets
 - commit hygiene: Conventional Commits
-- published package: `@imadtg/tgsm`
+- published package family:
+  - `@imadtg/tgsm`
+  - `@imadtg/tgsm-linux-x64`
+  - `@imadtg/tgsm-linux-arm64`
+  - `@imadtg/tgsm-darwin-x64`
+  - `@imadtg/tgsm-darwin-arm64`
+  - `@imadtg/tgsm-windows-x64`
+  - `@imadtg/tgsm-windows-arm64`
 
 ## Workspace Shape
 
@@ -22,6 +31,13 @@ Current packages:
 
 - `packages/core`
 - `packages/cli`
+- `packages/npm-wrapper`
+- `packages/tgsm-linux-x64`
+- `packages/tgsm-linux-arm64`
+- `packages/tgsm-darwin-x64`
+- `packages/tgsm-darwin-arm64`
+- `packages/tgsm-windows-x64`
+- `packages/tgsm-windows-arm64`
 
 The repo is intentionally minimal at this stage. Bot/web consumers remain future work, not active packages.
 
@@ -29,19 +45,20 @@ The repo is intentionally minimal at this stage. Bot/web consumers remain future
 
 Current release target:
 
-- publish `packages/cli` as `@imadtg/tgsm`
+- publish the six platform packages
+- publish `packages/npm-wrapper` as `@imadtg/tgsm`
 
 Current release support:
 
 - CI in GitHub Actions
 - Release workflow in GitHub Actions
-- local manual release flow validated in development
+- local validation flow for pack/smoke checks
 
 ## Why These Choices Were Kept
 
 ### Bun
 
-Bun is the current default because it is the workspace, install, and test tool that was actually used to build and release the repo.
+Bun is the current default because it is the workspace, install, test, and binary compile tool that is used to build and release the repo.
 
 ### mtcute
 
@@ -49,7 +66,7 @@ Bun is the current default because it is the workspace, install, and test tool t
 
 ### commander
 
-`commander` is the current CLI framework because it is already implemented and shipped in the CLI package.
+`commander` is the current CLI framework because it is already implemented in the internal source CLI package and compiles cleanly into the published standalone binaries.
 
 ### Changesets
 

@@ -6,7 +6,12 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "bun run --filter '@tgsm/core' build && bun run --filter '@imadtg/tgsm' build",
+    "build": "bun run build:js && bun run build:platforms",
+    "build:js": "bun run --filter '@tgsm/core' build && bun run --filter '@tgsm/cli-source' build",
+    "build:platforms": "bun run scripts/build-platform-packages.mjs",
+    "pack:public": "bun run scripts/pack-public-packages.mjs",
+    "publish:release": "bun run build && bun run scripts/publish-public-packages.mjs",
+    "verify:published-release": "bash ./scripts/verify-published-release.sh",
     "tgsm": "bun run packages/cli/src/index.ts",
     "test": "bun test",
     "typecheck": "bunx tsc --noEmit",

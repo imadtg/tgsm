@@ -39,10 +39,18 @@ bun add -g @imadtg/tgsm
 npm install -g @imadtg/tgsm
 ```
 
+### pnpm
+
+```bash
+pnpm add -g @imadtg/tgsm
+```
+
 ## Requirements
 
-- Node.js 20+ recommended for the published npm package
+- Bun, npm, or pnpm for installation
 - A Telegram `api_id` and `api_hash` from <https://my.telegram.org/apps> for real Telegram usage
+
+The published `@imadtg/tgsm` package is now a launcher package that resolves a platform-specific standalone binary at runtime. The Telegram client and `better-sqlite3` stay inside the compiled binary path instead of the generic npm wrapper package.
 
 ## Quick Start
 
@@ -180,6 +188,17 @@ Published package:
 @imadtg/tgsm
 ```
 
+Platform binary packages:
+
+```text
+@imadtg/tgsm-linux-x64
+@imadtg/tgsm-linux-arm64
+@imadtg/tgsm-darwin-x64
+@imadtg/tgsm-darwin-arm64
+@imadtg/tgsm-windows-x64
+@imadtg/tgsm-windows-arm64
+```
+
 For repo internals, operations, backlogs, and proposals, start with [docs/README.md](docs/README.md).
 
 ## Development
@@ -189,6 +208,8 @@ Install dependencies:
 ```bash
 bun install
 ```
+
+For the full multi-platform binary build, use Bun 1.3.1 or newer.
 
 Run tests:
 
@@ -210,7 +231,10 @@ bun run packages/cli/src/index.ts --help
 
 ## Operational Notes
 
-- Prefer Bun for local installation and release work.
+- Prefer Bun for workspace install, test, build, and release work.
+- Prefer `bun add -g @imadtg/tgsm` for the published global CLI.
+- `npm install -g @imadtg/tgsm` and `pnpm add -g @imadtg/tgsm` are first-class supported.
+- The launcher resolves the matching platform package at runtime. If installation is partial or the platform is unsupported, `tgsm` exits with a descriptive error.
 - If you have multiple global package managers on the same machine, verify which binary your shell resolves:
 
 ```bash

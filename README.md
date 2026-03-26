@@ -209,7 +209,7 @@ Install dependencies:
 bun install
 ```
 
-For the full multi-platform binary build, use Bun 1.3.1 or newer.
+For the full multi-platform binary build, use Bun 1.3.11 or newer.
 
 Run tests:
 

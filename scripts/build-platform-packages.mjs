@@ -9,6 +9,7 @@ import { spawnSync } from 'node:child_process'
 const repoRoot = process.cwd()
 const sourceEntry = path.join(repoRoot, 'packages/cli/src/index.ts')
 const wrapperVersion = readJson(path.join(repoRoot, 'packages/npm-wrapper/package.json')).version
+const bunExecutable = process.execPath
 
 const targets = [
   {
@@ -48,9 +49,9 @@ if (selectedTargets.length === 0) {
 }
 
 const bunVersion = readBunVersion()
-if (versionLt(bunVersion, '1.3.1') && selectedTargets.some((item) => item.target === 'bun-windows-arm64')) {
+if (versionLt(bunVersion, '1.3.11') && selectedTargets.some((item) => item.target === 'bun-windows-arm64')) {
   process.stderr.write(
-    `tgsm packaging requires Bun 1.3.1+ for the full target matrix; detected Bun ${bunVersion}.\n`,
+    `tgsm packaging requires Bun 1.3.11+ for the full target matrix; detected Bun ${bunVersion}.\n`,
   )
 }
 
@@ -60,7 +61,7 @@ for (const build of selectedTargets) {
   await mkdir(outDir, { recursive: true })
 
   const result = spawnSync(
-    'bun',
+    bunExecutable,
     [
       'build',
       '--compile',
@@ -92,8 +93,7 @@ function readJson(filePath) {
 }
 
 function readBunVersion() {
-  const result = spawnSync('bun', ['--version'], { cwd: repoRoot, encoding: 'utf8' })
-  return (result.stdout || '').trim() || '0.0.0'
+  return process.versions.bun || '0.0.0'
 }
 
 function versionLt(left, right) {

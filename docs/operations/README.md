@@ -58,7 +58,7 @@ Build packages:
 bun run build
 ```
 
-For the full six-target binary build, use Bun 1.3.1 or newer.
+For the full six-target binary build, use Bun 1.3.11 or newer.
 
 Run the CLI from source:
 

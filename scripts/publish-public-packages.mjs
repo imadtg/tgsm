@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 import { spawnSync } from 'node:child_process'
@@ -20,6 +21,14 @@ for (const packageDir of publishOrder) {
 }
 
 async function publishPackage(packageDir) {
+  const packagePath = path.join(repoRoot, packageDir, 'package.json')
+  const pkg = JSON.parse(readFileSync(packagePath, 'utf8'))
+
+  if (isPublished(pkg.name, pkg.version)) {
+    process.stdout.write(`Skipping already-published ${pkg.name}@${pkg.version}.\n`)
+    return
+  }
+
   for (let attempt = 1; attempt <= 5; attempt += 1) {
     const result = spawnSync('npm', ['publish', '--access', 'public'], {
       cwd: path.join(repoRoot, packageDir),
@@ -60,4 +69,19 @@ async function publishPackage(packageDir) {
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+function isPublished(name, version) {
+  const result = spawnSync('npm', ['view', `${name}@${version}`, 'version', '--json'], {
+    cwd: repoRoot,
+    encoding: 'utf8',
+    env: process.env,
+  })
+
+  if (result.status !== 0) {
+    return false
+  }
+
+  const output = (result.stdout ?? '').trim()
+  return output === JSON.stringify(version) || output === version
 }

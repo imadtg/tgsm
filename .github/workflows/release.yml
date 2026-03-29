@@ -22,6 +22,13 @@ jobs:
       - run: bun test
       - run: bun run build
       - run: ./scripts/smoke-bun-linux-wrapper.sh
+      - name: Diagnose npm auth
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          node -e "const token = process.env.NODE_AUTH_TOKEN ?? ''; console.log(JSON.stringify({ length: token.length, startsWithNpm: token.startsWith('npm_'), hasLeadingOrTrailingWhitespace: token !== token.trim(), endsWithNewline: /\\r?\\n$/.test(token) }, null, 2));"
+          npm whoami
+          npm ping --json
       - uses: changesets/action@v1
         id: changesets
         with:

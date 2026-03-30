@@ -1,8 +1,10 @@
 import path from 'node:path'
 import { createInterface } from 'node:readline/promises'
-import { readFile, writeFile } from 'node:fs/promises'
-import { TelegramClient, getMarkedPeerId, networkMiddlewares, type tl } from '@mtcute/node'
+import { readFile, rm, writeFile } from 'node:fs/promises'
+import { MemoryStorage, TelegramClient, getMarkedPeerId, networkMiddlewares, type tl } from '@mtcute/node'
+import { TgsmCryptoProvider } from './crypto'
 import { TgsmError } from './errors'
+import { getTelegramConfigPath, getTelegramSessionPath } from './paths'
 import type {
   AuthStatus,
   CacheMessageRecord,
@@ -35,6 +37,7 @@ const TELEGRAM_FLOOD_WAIT_MAX_MS = 30_000
 const TELEGRAM_CONNECT_TIMEOUT_MS = 30_000
 const TELEGRAM_RPC_TIMEOUT_MS = 45_000
 const TELEGRAM_DESTROY_TIMEOUT_MS = 5_000
+const SQLITE_FILE_HEADER = 'SQLite format 3'
 
 export class TelegramSource implements TgsmSourceAdapter {
   readonly backend = 'telegram' as const
@@ -48,9 +51,7 @@ export class TelegramSource implements TgsmSourceAdapter {
       phone: input.phone,
     }
 
-    await saveTelegramConfig(accountDir, config)
-    this.debug('auth.config_saved', { account_dir: accountDir, phone: input.phone })
-    const client = createTelegramClient(accountDir, config, this.options)
+    const client = createTelegramClient(config, this.options)
     const rl = createInterface({
       input: process.stdin,
       output: process.stderr,
@@ -83,6 +84,8 @@ export class TelegramSource implements TgsmSourceAdapter {
       })
 
       this.debug('auth.start.done', { user_id: String(user.id), display_name: user.displayName })
+      await persistTelegramState(accountDir, client, config)
+      this.debug('auth.state_saved', { account_dir: accountDir, phone: input.phone })
       return {
         authenticated: true,
         user: {
@@ -93,7 +96,7 @@ export class TelegramSource implements TgsmSourceAdapter {
     } catch (error) {
       throw new TgsmError({
         code: 'AUTH_FAILED',
-        message: error instanceof Error ? error.message : 'Telegram auth failed.',
+        message: describeTelegramFailure(error, 'Telegram auth failed.'),
         retryable: false,
       })
     } finally {
@@ -113,9 +116,18 @@ export class TelegramSource implements TgsmSourceAdapter {
       }
     }
 
-    const client = createTelegramClient(accountDir, config, this.options)
+    const client = createTelegramClient(config, this.options)
 
     try {
+      const imported = await restoreTelegramSession(accountDir, client, this.options)
+      if (!imported) {
+        this.debug('auth_status.session_missing', { account_dir: accountDir })
+        return {
+          authenticated: false,
+          user: null,
+        }
+      }
+
       this.debug('auth_status.start.begin', { account_dir: accountDir })
       await withTimeout(
         client.start({}),
@@ -123,6 +135,7 @@ export class TelegramSource implements TgsmSourceAdapter {
         'Timed out while connecting to Telegram.',
       )
       const me = await client.getMe()
+      await saveTelegramSession(accountDir, await client.exportSession())
       this.debug('auth_status.start.done', { user_id: String(me.id), display_name: me.displayName })
       return {
         authenticated: true,
@@ -155,15 +168,26 @@ export class TelegramSource implements TgsmSourceAdapter {
       })
     }
 
-    const client = createTelegramClient(accountDir, config, this.options)
+    const client = createTelegramClient(config, this.options)
 
     try {
+      const imported = await restoreTelegramSession(accountDir, client, this.options)
+      if (!imported) {
+        throw new TgsmError({
+          code: 'AUTH_REQUIRED',
+          message: 'Telegram session is not configured.',
+          retryable: false,
+          suggestion: 'Run `tgsm auth login` first.',
+        })
+      }
+
       this.debug('sync.start.begin', { account_dir: accountDir })
       const me = await withTimeout(
         client.start({}),
         TELEGRAM_CONNECT_TIMEOUT_MS,
         'Timed out while connecting to Telegram.',
       )
+      await saveTelegramSession(accountDir, await client.exportSession())
       this.debug('sync.start.done', { user_id: String(me.id), display_name: me.displayName })
       const syncedAt = new Date().toISOString()
       this.debug('sync.dialogs.begin')
@@ -267,12 +291,16 @@ export class TelegramSource implements TgsmSourceAdapter {
         synced_at: syncedAt,
       }
     } catch (error) {
+      if (error instanceof TgsmError) {
+        throw error
+      }
+
       this.debug('sync.failed', {
-        message: error instanceof Error ? error.message : 'Unknown sync error',
+        message: describeTelegramFailure(error, 'Telegram sync failed.'),
       })
       throw new TgsmError({
         code: 'TELEGRAM_SYNC_FAILED',
-        message: error instanceof Error ? error.message : 'Telegram sync failed.',
+        message: describeTelegramFailure(error, 'Telegram sync failed.'),
         retryable: true,
       })
     } finally {
@@ -288,15 +316,13 @@ export class TelegramSource implements TgsmSourceAdapter {
   }
 }
 
-function createTelegramClient(
-  accountDir: string,
-  config: TelegramConfig,
-  options: TelegramSourceOptions,
-): TelegramClient {
+function createTelegramClient(config: TelegramConfig, options: TelegramSourceOptions): TelegramClient {
   const client = new TelegramClient({
     apiId: config.apiId,
     apiHash: config.apiHash,
-    storage: path.join(accountDir, 'mtcute-session'),
+    crypto: new TgsmCryptoProvider(),
+    storage: new MemoryStorage(),
+    disableUpdates: true,
     logLevel: 0,
     network: {
       middlewares: networkMiddlewares.basic({
@@ -567,7 +593,7 @@ function previewText(text: string, limit = 80): string {
 
 async function loadTelegramConfig(accountDir: string): Promise<TelegramConfig | null> {
   try {
-    const raw = await readFile(path.join(accountDir, 'telegram.json'), 'utf8')
+    const raw = await readFile(getTelegramConfigPath(accountPathOptions(accountDir)), 'utf8')
     return JSON.parse(raw) as TelegramConfig
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null
@@ -577,10 +603,114 @@ async function loadTelegramConfig(accountDir: string): Promise<TelegramConfig | 
 
 async function saveTelegramConfig(accountDir: string, config: TelegramConfig): Promise<void> {
   await writeFile(
-    path.join(accountDir, 'telegram.json'),
+    getTelegramConfigPath(accountPathOptions(accountDir)),
     `${JSON.stringify(config, null, 2)}\n`,
     'utf8',
   )
+}
+
+async function persistTelegramState(
+  accountDir: string,
+  client: TelegramClient,
+  config: TelegramConfig,
+): Promise<void> {
+  await saveTelegramConfig(accountDir, config)
+  await saveTelegramSession(accountDir, await client.exportSession())
+}
+
+async function restoreTelegramSession(
+  accountDir: string,
+  client: TelegramClient,
+  options: TelegramSourceOptions,
+): Promise<boolean> {
+  const raw = await loadTelegramSessionRaw(accountDir)
+  if (!raw) {
+    return false
+  }
+
+  if (isLegacySqliteSession(raw)) {
+    options.logger?.('telegram.session_legacy_sqlite_detected', {
+      path: sessionPath(accountDir),
+    })
+    return false
+  }
+
+  const session = raw.toString('utf8').trim()
+  if (!session) {
+    return false
+  }
+
+  try {
+    await client.importSession(session)
+    return true
+  } catch (error) {
+    options.logger?.('telegram.session_import_failed', {
+      message: describeTelegramFailure(error, 'Failed to import Telegram session.'),
+    })
+    return false
+  }
+}
+
+async function loadTelegramSessionRaw(accountDir: string): Promise<Buffer | null> {
+  try {
+    return await readFile(sessionPath(accountDir))
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null
+    throw error
+  }
+}
+
+async function saveTelegramSession(accountDir: string, session: string): Promise<void> {
+  await writeFile(sessionPath(accountDir), `${session.trim()}\n`, 'utf8')
+  await Promise.all([
+    rm(`${sessionPath(accountDir)}-wal`, { force: true }),
+    rm(`${sessionPath(accountDir)}-shm`, { force: true }),
+  ])
+}
+
+function sessionPath(accountDir: string): string {
+  return getTelegramSessionPath(accountPathOptions(accountDir))
+}
+
+function accountPathOptions(accountDir: string): { homeDir: string, account: string } {
+  return {
+    homeDir: path.dirname(accountDir),
+    account: path.basename(accountDir),
+  }
+}
+
+export function isLegacySqliteSession(raw: Buffer): boolean {
+  return raw.subarray(0, SQLITE_FILE_HEADER.length).toString('utf8') === SQLITE_FILE_HEADER
+}
+
+export function describeTelegramFailure(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message.trim().length > 0) {
+    return error.message
+  }
+
+  if (typeof error === 'string' && error.trim().length > 0) {
+    return error
+  }
+
+  if (error && typeof error === 'object') {
+    const record = error as Record<string, unknown>
+    const message = [record.message, record.error, record.description]
+      .find((value): value is string => typeof value === 'string' && value.trim().length > 0)
+    if (message) {
+      return message
+    }
+
+    try {
+      const serialized = JSON.stringify(error)
+      if (serialized && serialized !== '{}') {
+        return serialized
+      }
+    } catch {
+      // Ignore serialization failures and return the fallback message below.
+    }
+  }
+
+  return fallback
 }
 
 async function withTimeout<T>(

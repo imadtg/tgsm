@@ -26,7 +26,7 @@ Current files:
 - `mtcute-session`
 - `cache.json`
 
-Treat `mtcute-session` as highly sensitive. Anyone with that session can act as the authenticated Telegram account until the session is revoked.
+`mtcute-session` is a persisted Telegram session string. Treat it as highly sensitive. Anyone with that session can act as the authenticated Telegram account until the session is revoked.
 
 ## What Is Not Implemented
 

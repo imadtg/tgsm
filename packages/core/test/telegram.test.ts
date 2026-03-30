@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { normalizeRawMessage } from '../src/index'
+import { describeTelegramFailure, isLegacySqliteSession, normalizeRawMessage } from '../src/index'
 
 describe('normalizeRawMessage', () => {
   test('treats outgoing Saved Messages entries as from_self even without fromId', () => {
@@ -69,5 +69,29 @@ describe('normalizeRawMessage', () => {
     expect(record.saved_peer_id).toBe('self')
     expect(record.forwarded).toBe(true)
     expect(record.from_self).toBe(false)
+  })
+})
+
+describe('describeTelegramFailure', () => {
+  test('preserves plain-string failures', () => {
+    expect(describeTelegramFailure('boom', 'fallback')).toBe('boom')
+  })
+
+  test('preserves message-like object failures', () => {
+    expect(describeTelegramFailure({ message: 'rpc failed' }, 'fallback')).toBe('rpc failed')
+  })
+
+  test('falls back when the failure cannot be described', () => {
+    expect(describeTelegramFailure(null, 'fallback')).toBe('fallback')
+  })
+})
+
+describe('isLegacySqliteSession', () => {
+  test('detects legacy sqlite session files', () => {
+    expect(isLegacySqliteSession(Buffer.from('SQLite format 3\0extra bytes'))).toBe(true)
+  })
+
+  test('ignores string-session files', () => {
+    expect(isLegacySqliteSession(Buffer.from('1AQAOMT...'))).toBe(false)
   })
 })

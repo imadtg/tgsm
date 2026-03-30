@@ -135,6 +135,8 @@ Current files:
 - `telegram.json`
 - `mtcute-session`
 
+`mtcute-session` is a persisted Telegram session string.
+
 ## Release Flow
 
 The intended release model is:

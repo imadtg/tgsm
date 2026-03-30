@@ -22,15 +22,9 @@ These items should not be described as current behavior elsewhere in the docs.
 These came out of a docs-guided audit against mtcute's `llms.txt` and guide pages.
 They are not current behavior.
 
-- disable mtcute updates for the request/response CLI client paths that do not consume updates
 - replace `client.start({})` in non-login flows with explicit signed-in checks and manual auth-state handling
-- preserve RPC error detail instead of flattening auth loss, transport failure, and flood/rate-limit cases into generic errors
 - remove the dead `hash = 0` not-modified branch or implement a real incremental sync hash flow
 - paginate `messages.getSavedDialogs` instead of assuming a single page is enough
-- avoid persisting Telegram credentials before a successful login completes
-- tighten local secret-storage handling and file-ignore coverage for `mtcute-session` SQLite sidecar files
-- document the actual mtcute storage behavior, including possible `-wal` and `-shm` files
-- consider session export/import support for containerized or ephemeral environments
 
 ## Mutation-Adjacent Operational Work
 

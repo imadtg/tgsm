@@ -50,7 +50,7 @@ pnpm add -g @imadtg/tgsm
 - Bun, npm, or pnpm for installation
 - A Telegram `api_id` and `api_hash` from <https://my.telegram.org/apps> for real Telegram usage
 
-The published `@imadtg/tgsm` package is now a launcher package that resolves a platform-specific standalone binary at runtime. The Telegram client and `better-sqlite3` stay inside the compiled binary path instead of the generic npm wrapper package.
+The published `@imadtg/tgsm` package is a launcher package that resolves a platform-specific standalone binary at runtime.
 
 ## Quick Start
 
@@ -166,6 +166,8 @@ Current files include:
 - `cache.json`
 - `telegram.json`
 - `mtcute-session`
+
+`mtcute-session` is a persisted Telegram session string, not a SQLite database.
 
 Override the base path with:
 

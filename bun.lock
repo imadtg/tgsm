@@ -1,5 +1,6 @@
 {
   "lockfileVersion": 1,
+  "configVersion": 0,
   "workspaces": {
     "": {
       "name": "tgsm",
@@ -27,12 +28,14 @@
       "name": "@tgsm/core",
       "version": "0.0.1",
       "dependencies": {
+        "@mtcute/core": "^0.28.2",
         "@mtcute/node": "^0.28.2",
+        "@mtcute/wasm": "^0.27.8",
       },
     },
     "packages/npm-wrapper": {
       "name": "@imadtg/tgsm",
-      "version": "0.0.7",
+      "version": "0.0.8",
       "bin": {
         "tgsm": "bin/tgsm",
       },
@@ -47,27 +50,27 @@
     },
     "packages/tgsm-darwin-arm64": {
       "name": "@imadtg/tgsm-darwin-arm64",
-      "version": "0.0.7",
+      "version": "0.0.8",
     },
     "packages/tgsm-darwin-x64": {
       "name": "@imadtg/tgsm-darwin-x64",
-      "version": "0.0.7",
+      "version": "0.0.8",
     },
     "packages/tgsm-linux-arm64": {
       "name": "@imadtg/tgsm-linux-arm64",
-      "version": "0.0.7",
+      "version": "0.0.8",
     },
     "packages/tgsm-linux-x64": {
       "name": "@imadtg/tgsm-linux-x64",
-      "version": "0.0.7",
+      "version": "0.0.8",
     },
     "packages/tgsm-windows-arm64": {
       "name": "@imadtg/tgsm-windows-arm64",
-      "version": "0.0.7",
+      "version": "0.0.8",
     },
     "packages/tgsm-windows-x64": {
       "name": "@imadtg/tgsm-windows-x64",
-      "version": "0.0.7",
+      "version": "0.0.8",
     },
   },
   "packages": {

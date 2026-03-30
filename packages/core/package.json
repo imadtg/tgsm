@@ -16,6 +16,8 @@
     "test": "bun test"
   },
   "dependencies": {
-    "@mtcute/node": "^0.28.2"
+    "@mtcute/core": "^0.28.2",
+    "@mtcute/node": "^0.28.2",
+    "@mtcute/wasm": "^0.27.8"
   }
 }

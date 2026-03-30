@@ -8,4 +8,10 @@ export default defineConfig({
   clean: true,
   platform: 'node',
   target: 'node20',
+  esbuildOptions(options) {
+    options.loader = {
+      ...options.loader,
+      '.wasm': 'file',
+    }
+  },
 })

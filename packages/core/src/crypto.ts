@@ -3,8 +3,8 @@ import { readFile } from 'node:fs/promises'
 import { gunzipSync, deflateSync } from 'node:zlib'
 import { BaseCryptoProvider } from '@mtcute/core/utils.js'
 import { SIMD_AVAILABLE, ige256Decrypt, ige256Encrypt, initSync } from '@mtcute/wasm'
-import simdWasmFile from '@mtcute/wasm/mtcute-simd.wasm' with { type: 'file' }
-import wasmFile from '@mtcute/wasm/mtcute.wasm' with { type: 'file' }
+import simdWasmFile from '@mtcute/wasm/mtcute-simd.wasm'
+import wasmFile from '@mtcute/wasm/mtcute.wasm'
 
 export class TgsmCryptoProvider extends BaseCryptoProvider {
   createAesCtr(key: Uint8Array, iv: Uint8Array, _encrypt = true) {

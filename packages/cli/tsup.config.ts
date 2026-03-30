@@ -12,4 +12,10 @@ export default defineConfig({
   },
   noExternal: ['@tgsm/core'],
   external: ['@mtcute/node'],
+  esbuildOptions(options) {
+    options.loader = {
+      ...options.loader,
+      '.wasm': 'file',
+    }
+  },
 })

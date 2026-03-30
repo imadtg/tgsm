@@ -25,6 +25,7 @@ jobs:
       - name: Diagnose npm auth
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           node -e "const token = process.env.NODE_AUTH_TOKEN ?? ''; console.log(JSON.stringify({ length: token.length, startsWithNpm: token.startsWith('npm_'), hasLeadingOrTrailingWhitespace: token !== token.trim(), endsWithNewline: /\\r?\\n$/.test(token) }, null, 2));"
           npm whoami
@@ -37,5 +38,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_TOKEN: ${{ secrets.NPM_TOKEN }}
       - if: steps.changesets.outputs.published == 'true'
         run: bun run verify:published-release $(node -p "require('./packages/npm-wrapper/package.json').version")

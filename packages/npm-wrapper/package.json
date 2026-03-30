@@ -1,6 +1,6 @@
 {
   "name": "@imadtg/tgsm",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "type": "commonjs",
   "description": "A retrieval-first CLI for navigating Telegram Saved Messages as structured, agent-readable context.",
   "license": "MIT",
@@ -28,12 +28,12 @@
     "LICENSE"
   ],
   "optionalDependencies": {
-    "@imadtg/tgsm-linux-x64": "0.0.8",
-    "@imadtg/tgsm-linux-arm64": "0.0.8",
-    "@imadtg/tgsm-darwin-x64": "0.0.8",
-    "@imadtg/tgsm-darwin-arm64": "0.0.8",
-    "@imadtg/tgsm-windows-x64": "0.0.8",
-    "@imadtg/tgsm-windows-arm64": "0.0.8"
+    "@imadtg/tgsm-linux-x64": "0.0.9",
+    "@imadtg/tgsm-linux-arm64": "0.0.9",
+    "@imadtg/tgsm-darwin-x64": "0.0.9",
+    "@imadtg/tgsm-darwin-arm64": "0.0.9",
+    "@imadtg/tgsm-windows-x64": "0.0.9",
+    "@imadtg/tgsm-windows-arm64": "0.0.9"
   },
   "publishConfig": {
     "access": "public"

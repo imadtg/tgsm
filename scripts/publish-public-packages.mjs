@@ -15,6 +15,8 @@ const publishOrder = [
   'packages/tgsm-windows-arm64',
   'packages/npm-wrapper',
 ]
+const publishExecutable = process.versions.bun ? process.execPath : 'bun'
+const publishArgs = ['publish', '--access', 'public']
 
 for (const packageDir of publishOrder) {
   await publishPackage(packageDir)
@@ -30,7 +32,7 @@ async function publishPackage(packageDir) {
   }
 
   for (let attempt = 1; attempt <= 5; attempt += 1) {
-    const result = spawnSync('npm', ['publish', '--access', 'public'], {
+    const result = spawnSync(publishExecutable, publishArgs, {
       cwd: path.join(repoRoot, packageDir),
       encoding: 'utf8',
       env: process.env,
@@ -52,13 +54,11 @@ async function publishPackage(packageDir) {
 
     if (
       attempt < 5 &&
-      /npm error 5\d\d\b|E5\d\d\b|Bad Gateway|Gateway Timeout|Service Unavailable|ECONNRESET|ETIMEDOUT|network request/i.test(
+      /npm error 5\d\d\b|E5\d\d\b|Bad Gateway|Gateway Timeout|Service Unavailable|ECONNRESET|ETIMEDOUT|network request|ConnectionClosed|ConnectionRefused|Timeout: failed to publish package/i.test(
         output,
       )
     ) {
-      process.stderr.write(
-        `Transient npm publish failure for ${packageDir}; retrying (${attempt}/5).\n`,
-      )
+      process.stderr.write(`Transient publish failure for ${packageDir}; retrying (${attempt}/5).\n`)
       await sleep(2000 * attempt)
       continue
     }

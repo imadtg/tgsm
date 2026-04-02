@@ -43,12 +43,12 @@ Why this matters:
 
 ## 4. Multi-Account Horizon
 
-The docs assume one Telegram account for now. What remains open is whether multi-account support should influence the first architecture pass anyway.
+The codebase already reserves account scoping in local paths and exposes `--account` in the CLI. What remains open is whether multi-account should stay as a low-visibility implementation detail for now or become a more explicit product surface.
 
 Why this matters:
 
-- if near-term, the config and cache layout should reserve account scoping now
-- if not near-term, the docs should stay simpler and avoid polluting every command surface with account flags
+- if near-term, docs and operator guidance should explain the account model directly
+- if not near-term, the CLI should keep the capability without over-centering it in the main product story
 
 ## Defaults Chosen For Now
 
@@ -59,4 +59,4 @@ Until these are explicitly resolved, the working defaults are:
 - saved dialogs are part of the core read model
 - no in-band metadata edits in the sharp basis
 - soft delete remains a follow-on proposal
-- single-account remains the default assumption
+- single-account remains the default user-facing assumption, even though account-scoped local state already exists in the implementation

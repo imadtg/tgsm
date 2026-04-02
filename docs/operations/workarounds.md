@@ -23,8 +23,11 @@ What helped on this machine:
 - verifying the Bun-installed binary directly at:
 
 ```bash
-~/.cache/.bun/bin/tgsm --version
+~/.bun/bin/tgsm --version
 ```
+
+- on this machine specifically, the resolved Bun global binary was `/home/pc/.bun/bin/tgsm`
+- if `BUN_INSTALL` is set explicitly, checking `$BUN_INSTALL/bin/tgsm --version`
 
 ### Bun Publish Authentication
 

@@ -128,15 +128,9 @@ export class TelegramSource implements TgsmSourceAdapter {
         }
       }
 
-      this.debug('auth_status.start.begin', { account_dir: accountDir })
-      await withTimeout(
-        client.start({}),
-        TELEGRAM_CONNECT_TIMEOUT_MS,
-        'Timed out while connecting to Telegram.',
-      )
-      const me = await client.getMe()
-      await saveTelegramSession(accountDir, await client.exportSession())
-      this.debug('auth_status.start.done', { user_id: String(me.id), display_name: me.displayName })
+      this.debug('auth_status.check.begin', { account_dir: accountDir })
+      const me = await ensureAuthenticatedUser(accountDir, client, this.options)
+      this.debug('auth_status.check.done', { user_id: String(me.id), display_name: me.displayName })
       return {
         authenticated: true,
         user: {
@@ -145,7 +139,7 @@ export class TelegramSource implements TgsmSourceAdapter {
         },
       }
     } catch {
-      this.debug('auth_status.start.failed')
+      this.debug('auth_status.check.failed')
       return {
         authenticated: false,
         user: null,
@@ -182,12 +176,7 @@ export class TelegramSource implements TgsmSourceAdapter {
       }
 
       this.debug('sync.start.begin', { account_dir: accountDir })
-      const me = await withTimeout(
-        client.start({}),
-        TELEGRAM_CONNECT_TIMEOUT_MS,
-        'Timed out while connecting to Telegram.',
-      )
-      await saveTelegramSession(accountDir, await client.exportSession())
+      const me = await ensureAuthenticatedUser(accountDir, client, this.options)
       this.debug('sync.start.done', { user_id: String(me.id), display_name: me.displayName })
       const syncedAt = new Date().toISOString()
       this.debug('sync.dialogs.begin')
@@ -295,6 +284,15 @@ export class TelegramSource implements TgsmSourceAdapter {
         throw error
       }
 
+      if (isTelegramAuthMissingError(error)) {
+        throw new TgsmError({
+          code: 'AUTH_REQUIRED',
+          message: describeTelegramFailure(error, 'Telegram session is no longer valid.'),
+          retryable: false,
+          suggestion: 'Run `tgsm auth login` first.',
+        })
+      }
+
       this.debug('sync.failed', {
         message: describeTelegramFailure(error, 'Telegram sync failed.'),
       })
@@ -368,6 +366,32 @@ async function destroyClientQuietly(client: TelegramClient): Promise<'destroyed'
       return 'timed_out'
     }
     return 'failed'
+  }
+}
+
+async function ensureAuthenticatedUser(
+  accountDir: string,
+  client: TelegramClient,
+  options: TelegramSourceOptions,
+) {
+  try {
+    const me = await withTimeout(
+      client.getMe(),
+      TELEGRAM_CONNECT_TIMEOUT_MS,
+      'Timed out while connecting to Telegram.',
+    )
+    await saveTelegramSession(accountDir, await client.exportSession())
+    return me
+  } catch (error) {
+    if (isTelegramAuthInvalidError(error)) {
+      options.logger?.('telegram.session_invalidated', {
+        account_dir: accountDir,
+        message: describeTelegramFailure(error, 'Telegram session is no longer valid.'),
+      })
+      await clearTelegramSession(accountDir)
+    }
+
+    throw error
   }
 }
 
@@ -668,6 +692,14 @@ async function saveTelegramSession(accountDir: string, session: string): Promise
   ])
 }
 
+async function clearTelegramSession(accountDir: string): Promise<void> {
+  await Promise.all([
+    rm(sessionPath(accountDir), { force: true }),
+    rm(`${sessionPath(accountDir)}-wal`, { force: true }),
+    rm(`${sessionPath(accountDir)}-shm`, { force: true }),
+  ])
+}
+
 function sessionPath(accountDir: string): string {
   return getTelegramSessionPath(accountPathOptions(accountDir))
 }
@@ -711,6 +743,22 @@ export function describeTelegramFailure(error: unknown, fallback: string): strin
   }
 
   return fallback
+}
+
+export function isTelegramAuthInvalidError(error: unknown): boolean {
+  return (
+    tl.RpcError.is(error, 'AUTH_KEY_UNREGISTERED') ||
+    tl.RpcError.is(error, 'SESSION_REVOKED') ||
+    tl.RpcError.is(error, 'USER_DEACTIVATED') ||
+    tl.RpcError.is(error, 'USER_DEACTIVATED_BAN')
+  )
+}
+
+export function isTelegramAuthMissingError(error: unknown): boolean {
+  return (
+    isTelegramAuthInvalidError(error) ||
+    tl.RpcError.is(error, 'SESSION_PASSWORD_NEEDED')
+  )
 }
 
 async function withTimeout<T>(

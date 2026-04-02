@@ -175,6 +175,12 @@ Override the base path with:
 tgsm --home /custom/path ...
 ```
 
+Or by setting:
+
+```bash
+export TGSM_HOME=/custom/path
+```
+
 ## Release Model
 
 This repo uses:
@@ -183,6 +189,15 @@ This repo uses:
 - Changesets for versioning and publishing
 
 Changesets, not commit messages alone, are the source of truth for future version bumps.
+
+The currently validated release path in this repo is:
+
+1. add a Changeset
+2. run `bunx changeset version`
+3. commit and push the versioned package state to `main`
+4. let the release workflow publish from that pushed state
+
+Do not assume Actions-created release PRs are the primary path here.
 
 Published package:
 

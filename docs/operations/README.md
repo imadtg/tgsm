@@ -74,6 +74,10 @@ Automated:
 
 - fixture-backed tests for read-model behavior
 - fixture-backed CLI tests for output and command behavior
+- helper/regression tests for Telegram normalization and session handling
+- compiled-Bun-binary regression coverage for the mtcute crypto/WASM path
+- packaged-wrapper smoke verification for install and execution on Linux
+- post-publish install verification across Bun, npm, and pnpm
 
 Live/manual:
 
@@ -92,6 +96,8 @@ The production-critical live commands validated so far are:
 - `tgsm threads inspect <id>`
 
 `messages context` exists and is implemented, but it has not been stressed to the same level as the commands above.
+
+Operational note: `messages context` currently returns the same hybrid context bundle shape as `messages get`; it is a separate command surface today, not a separate retrieval model.
 
 ## Debugging
 
@@ -137,6 +143,8 @@ Current files:
 
 `mtcute-session` is a persisted Telegram session string.
 
+The base directory can be overridden with either `--home <path>` or `TGSM_HOME`.
+
 ## Release Flow
 
 The intended release model is:
@@ -156,6 +164,10 @@ High-level local release sequence:
 5. run tests
 6. run build
 7. publish the platform packages and wrapper package
+
+The currently validated repo path is to run `bunx changeset version` locally, commit the versioned package state, push it to `main`, and let the release workflow publish from that pushed state.
+
+The workflow still uses `changesets/action`, but Actions-created release PR behavior should not be assumed to be the primary path in this repo until that flow is simplified.
 
 Machine-local publishing quirks, if any, belong in [Workarounds](./workarounds.md), not here.
 

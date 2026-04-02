@@ -72,6 +72,8 @@ Bun is the current default because it is the workspace, install, test, and binar
 
 Changesets is the current versioning flow because it supports explicit release intent and works cleanly with the current workspace.
 
+The currently validated repo path still versions packages locally before pushing the publishable state to `main`, rather than assuming an Actions-created release PR is the primary path.
+
 ## What Is Still Not Settled As Product Direction
 
 These are implementation details today, not product guarantees:

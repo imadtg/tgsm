@@ -1,5 +1,12 @@
+import { tl } from '@mtcute/node'
 import { describe, expect, test } from 'bun:test'
-import { describeTelegramFailure, isLegacySqliteSession, normalizeRawMessage } from '../src/index'
+import {
+  describeTelegramFailure,
+  isLegacySqliteSession,
+  isTelegramAuthInvalidError,
+  isTelegramAuthMissingError,
+  normalizeRawMessage,
+} from '../src/index'
 
 describe('normalizeRawMessage', () => {
   test('treats outgoing Saved Messages entries as from_self even without fromId', () => {
@@ -93,5 +100,20 @@ describe('isLegacySqliteSession', () => {
 
   test('ignores string-session files', () => {
     expect(isLegacySqliteSession(Buffer.from('1AQAOMT...'))).toBe(false)
+  })
+})
+
+describe('telegram auth error helpers', () => {
+  test('treats invalidated sessions as invalid auth', () => {
+    expect(isTelegramAuthInvalidError(new tl.RpcError(401, 'AUTH_KEY_UNREGISTERED'))).toBe(true)
+    expect(isTelegramAuthInvalidError(new tl.RpcError(401, 'SESSION_REVOKED'))).toBe(true)
+  })
+
+  test('treats 2fa-needed sessions as missing auth for non-login flows', () => {
+    expect(isTelegramAuthMissingError(new tl.RpcError(401, 'SESSION_PASSWORD_NEEDED'))).toBe(true)
+  })
+
+  test('ignores unrelated rpc failures', () => {
+    expect(isTelegramAuthMissingError(new tl.RpcError(420, 'FLOOD_WAIT_10'))).toBe(false)
   })
 })

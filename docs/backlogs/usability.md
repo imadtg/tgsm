@@ -12,6 +12,16 @@ This file tracks retrieval and CLI usability shortcomings that are real enough t
 - CLI reliability itself is part of product usability: if `tgsm sync` hangs, stalls, or requires falling back to lower-level code paths, that is a first-class bug rather than an implementation detail
 - freshness is too implicit right now: after a sync attempt, the CLI should make it obvious whether later reads are using newly refreshed data or stale cache state
 - deletion and mutation flows will need especially careful UX, but retrieval usability still needs more iteration before those become the focus
+- `saved-dialogs` may currently be over-exposed in the CLI relative to the dominant real use case, where most items are self-authored and saved-dialog identity is only occasional retrieval context
+- dialog scope may fit better as a generic filterable field than as a primary command noun across the whole CLI
+- a canonical message selector such as `<saved_peer_id>:<message_id>` may be a better long-term contract than bare numeric IDs when cross-dialog ambiguity matters; text-mode parsing can stay lenient and default to `self`, while JSON should always emit the explicit dialog/peer id
+- `messages get`, `messages context`, and `threads inspect` may be semantically too fragmented; it is worth testing whether one retrieval command with expansion flags would be clearer
+- the current text formatter is compact and labeled, but it still needs iteration against real agent workflows to determine whether it is token-efficient enough compared with a more snapshot-like grammar
+- field projection, schema discoverability, and pipe-friendly batch flows are still unresolved:
+  - add `--fields` or similar projection
+  - rely more deliberately on `--json` plus `jq`
+  - accept stdin or file-fed message IDs for bulk retrieval/context expansion
+- e2e retrieval tasks should be tested against real "search then expand many hits" workflows, not only single-message inspection
 
 ## Rule
 

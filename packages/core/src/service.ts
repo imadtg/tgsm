@@ -7,6 +7,9 @@ import type {
   CacheState,
   ContextMessage,
   GetMessageOptions,
+  MessageInspectExpansion,
+  MessageInspectResult,
+  MessageThreadNode,
   ListMessagesOptions,
   MessageContextBundle,
   MessageEnvelope,
@@ -34,6 +37,9 @@ interface Indexes {
 }
 
 const DEFAULT_CHRONOLOGY_LIMIT = 20
+const DEFAULT_INSPECT_BEFORE = 5
+const DEFAULT_INSPECT_AFTER = 5
+const DEFAULT_THREAD_DEPTH = 1
 
 export class TgsmService {
   constructor(private readonly options: TgsmServiceOptions) {}
@@ -100,7 +106,7 @@ export class TgsmService {
         code: 'DIALOG_NOT_FOUND',
         message: `Saved dialog ${dialogId} was not found.`,
         retryable: false,
-        suggestion: 'Run `tgsm saved-dialogs list` to inspect available dialogs.',
+        suggestion: 'Run `tgsm messages list --json` to inspect available saved peer ids.',
       })
     }
 
@@ -135,6 +141,96 @@ export class TgsmService {
 
   async getContext(messageId: number, options: GetMessageOptions = {}): Promise<MessageContextBundle> {
     return this.getMessage(messageId, options)
+  }
+
+  async inspectMessage(
+    input: string | number,
+    options: GetMessageOptions = {},
+  ): Promise<MessageInspectResult> {
+    const cache = await this.loadCache()
+    const indexes = this.buildIndexes(cache)
+    const resolved = this.resolveMessageTarget(indexes, input)
+    const target = resolved.message
+    const dialog = indexes.dialogsById.get(target.saved_peer_id)
+
+    if (!dialog) {
+      throw new TgsmError({
+        code: 'DIALOG_NOT_FOUND',
+        message: `Saved dialog ${target.saved_peer_id} was not found.`,
+        retryable: false,
+      })
+    }
+
+    const requested = normalizeInspectExpansions(options.with)
+    const notes: string[] = []
+    const expansions: MessageInspectResult['expansions'] = {}
+
+    const replyTarget =
+      target.reply_to_message_id !== null
+        ? indexes.messagesByKey.get(
+            makeMessageKey(target.reply_to_saved_peer_id ?? target.saved_peer_id, target.reply_to_message_id),
+          ) ?? null
+        : null
+
+    if (target.reply_to_message_id !== null && !replyTarget) {
+      notes.push(`Reply target #${target.reply_to_message_id} could not be resolved in cache.`)
+    }
+
+    if (requested.has('chronology')) {
+      const chronological = indexes.messagesByDialog.get(target.saved_peer_id) ?? []
+      const targetIndex = chronological.findIndex(
+        (message) => message.message_id === target.message_id && message.saved_peer_id === target.saved_peer_id,
+      )
+      const beforeLimit = normalizePositiveInt(options.before, DEFAULT_INSPECT_BEFORE)
+      const afterLimit = normalizePositiveInt(options.after, DEFAULT_INSPECT_AFTER)
+      const before = chronological.slice(Math.max(0, targetIndex - beforeLimit), targetIndex)
+      const after = chronological.slice(targetIndex + 1, targetIndex + 1 + afterLimit)
+
+      expansions.chronology = {
+        before: before.map((message) => this.toMessageRef(message, 'chronology_before')),
+        after: after.map((message) => this.toMessageRef(message, 'chronology_after')),
+        before_count: before.length,
+        after_count: after.length,
+      }
+    }
+
+    if (requested.has('reply_parent')) {
+      expansions.reply_parent =
+        target.reply_to_message_id === null
+          ? null
+          : replyTarget
+            ? this.toMessageRef(replyTarget, 'reply_to')
+            : {
+                message_id: target.reply_to_message_id,
+                saved_peer_id: target.reply_to_saved_peer_id ?? target.saved_peer_id,
+                text_preview: '(missing from cache)',
+                date: '',
+                relationship: 'reply_to',
+              }
+    }
+
+    if (requested.has('backreplies')) {
+      const directBackreplies =
+        indexes.backreplyIndex.get(makeMessageKey(target.saved_peer_id, target.message_id)) ?? []
+      expansions.backreplies = directBackreplies.map((message) => this.toMessageRef(message, 'backreply'))
+    }
+
+    if (requested.has('thread')) {
+      const depthLimit = normalizeNonNegativeInt(options.thread_depth, DEFAULT_THREAD_DEPTH)
+      expansions.thread = this.buildLimitedThreadExpansion(target, indexes, depthLimit)
+    }
+
+    return {
+      target: this.toEnvelope(target, indexes),
+      dialog,
+      selector: {
+        input: String(input),
+        resolved: makeMessageKey(target.saved_peer_id, target.message_id),
+        defaulted_to_self: resolved.defaultedToSelf,
+      },
+      expansions,
+      notes,
+    }
   }
 
   async inspectThread(messageId: number, options: GetMessageOptions = {}): Promise<ThreadInspectResult> {
@@ -221,7 +317,7 @@ export class TgsmService {
           code: 'MESSAGE_NOT_FOUND',
           message: `Message ${messageId} was not found in dialog ${dialog}.`,
           retryable: false,
-          suggestion: 'Run `tgsm messages list --dialog <saved_peer_id>` to inspect the dialog.',
+          suggestion: 'Run `tgsm messages list --dialog <saved_peer_id>` to inspect that scope.',
         })
       }
       return scoped
@@ -248,6 +344,66 @@ export class TgsmService {
     }
 
     return candidates[0]!
+  }
+
+  private resolveMessageTarget(
+    indexes: Indexes,
+    input: string | number,
+  ): { message: CacheMessageRecord, defaultedToSelf: boolean } {
+    if (typeof input === 'number') {
+      return this.resolveMessageTarget(indexes, String(input))
+    }
+
+    const trimmed = input.trim()
+    const explicit = parseExplicitSelector(trimmed)
+    if (explicit) {
+      return {
+        message: this.findMessage(indexes, explicit.messageId, explicit.savedPeerId),
+        defaultedToSelf: false,
+      }
+    }
+
+    const numericId = Number(trimmed)
+    if (!Number.isInteger(numericId) || numericId < 1) {
+      throw new TgsmError({
+        code: 'INVALID_MESSAGE_SELECTOR',
+        message: `Message selector ${JSON.stringify(input)} is invalid.`,
+        retryable: false,
+        suggestion: 'Use `<message_id>` or `<saved_peer_id>:<message_id>`.',
+      })
+    }
+
+    const selfScoped = indexes.messagesByKey.get(makeMessageKey('self', numericId))
+    if (selfScoped) {
+      return {
+        message: selfScoped,
+        defaultedToSelf: true,
+      }
+    }
+
+    const candidates = indexes.messagesByGlobalId.get(numericId) ?? []
+    if (candidates.length === 1) {
+      return {
+        message: candidates[0]!,
+        defaultedToSelf: false,
+      }
+    }
+
+    if (candidates.length > 1) {
+      throw new TgsmError({
+        code: 'AMBIGUOUS_MESSAGE_ID',
+        message: `Message ID ${numericId} exists in multiple saved dialogs.`,
+        retryable: false,
+        suggestion: 'Pass `<saved_peer_id>:<message_id>` to disambiguate.',
+      })
+    }
+
+    throw new TgsmError({
+      code: 'MESSAGE_NOT_FOUND',
+      message: `Message ${numericId} was not found in the selected scope.`,
+      retryable: false,
+      suggestion: 'Run `tgsm messages list` or pass an explicit `<saved_peer_id>:<message_id>` selector.',
+    })
   }
 
   private buildContextBundle(target: CacheMessageRecord, indexes: Indexes): MessageContextBundle {
@@ -466,6 +622,59 @@ export class TgsmService {
     }
   }
 
+  private buildLimitedThreadExpansion(
+    message: CacheMessageRecord,
+    indexes: Indexes,
+    depthLimit: number,
+  ): MessageInspectResult['expansions']['thread'] {
+    const root = this.findThreadRoot(message, indexes)
+    const built = this.buildLimitedThreadNode(root, indexes, 0, depthLimit)
+
+    return {
+      root: this.toMessageRef(root, 'thread_member'),
+      depth_limit: depthLimit,
+      truncated: built.truncated,
+      nodes: [built.node],
+    }
+  }
+
+  private buildLimitedThreadNode(
+    message: CacheMessageRecord,
+    indexes: Indexes,
+    depth: number,
+    depthLimit: number,
+  ): { node: MessageThreadNode, truncated: boolean } {
+    const children =
+      indexes.backreplyIndex.get(makeMessageKey(message.saved_peer_id, message.message_id)) ?? []
+
+    if (depth >= depthLimit) {
+      return {
+        node: {
+          message: this.toMessageRef(message, 'thread_member'),
+          depth,
+          children: [],
+        },
+        truncated: children.length > 0,
+      }
+    }
+
+    let truncated = false
+    const builtChildren = children.map((child) => {
+      const built = this.buildLimitedThreadNode(child, indexes, depth + 1, depthLimit)
+      truncated ||= built.truncated
+      return built.node
+    })
+
+    return {
+      node: {
+        message: this.toMessageRef(message, 'thread_member'),
+        depth,
+        children: builtChildren,
+      },
+      truncated,
+    }
+  }
+
   private countAncestors(message: CacheMessageRecord, indexes: Indexes): number {
     let count = 0
     let current = message
@@ -499,6 +708,37 @@ export class TgsmService {
 
 function makeMessageKey(savedPeerId: string, messageId: number): string {
   return `${savedPeerId}:${messageId}`
+}
+
+function parseExplicitSelector(
+  input: string,
+): { savedPeerId: string, messageId: number } | null {
+  const match = /^(.*):(\d+)$/.exec(input)
+  if (!match) return null
+
+  const savedPeerId = match[1]?.trim()
+  const messageId = Number(match[2])
+  if (!savedPeerId || !Number.isInteger(messageId) || messageId < 1) {
+    return null
+  }
+
+  return { savedPeerId, messageId }
+}
+
+function normalizeInspectExpansions(
+  requested: MessageInspectExpansion[] | undefined,
+): Set<MessageInspectExpansion> {
+  return new Set(requested ?? [])
+}
+
+function normalizePositiveInt(value: number | undefined, fallback: number): number {
+  if (!Number.isFinite(value) || !value || value < 1) return fallback
+  return Math.floor(value)
+}
+
+function normalizeNonNegativeInt(value: number | undefined, fallback: number): number {
+  if (!Number.isFinite(value) || value === undefined || value < 0) return fallback
+  return Math.floor(value)
 }
 
 function encodeCursor(offset: number): string {

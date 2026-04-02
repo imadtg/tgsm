@@ -1,6 +1,7 @@
 import type {
   AuthStatus,
   MessageContextBundle,
+  MessageInspectResult,
   MessageListItem,
   SavedDialogSummary,
   SearchResultPage,
@@ -45,22 +46,87 @@ export function formatSavedDialogs(dialogs: SavedDialogSummary[]): string {
 export function formatMessagesPage(page: SearchResultPage<MessageListItem>): string {
   if (page.items.length === 0) return 'No messages found.'
 
-  const header =
-    page.scope === 'saved_dialog'
-      ? `messages scope=${page.saved_peer_id} total=${page.result_count}`
-      : `messages scope=all_saved_dialogs total=${page.result_count}`
+  const header = [
+    'messages',
+    `scope=${page.scope === 'saved_dialog' ? page.saved_peer_id : 'all_saved_dialogs'}`,
+    `total=${page.result_count}`,
+    `next=${page.next_cursor ?? '-'}`,
+  ].join(' ')
 
   const blocks = page.items.map((item) =>
     [
-      `#${item.message_id} ${item.date}`,
-      `dialog: ${item.saved_peer_id} (${item.dialog_title})`,
-      `from_self: ${item.from_self} forwarded: ${item.forwarded}`,
-      `reply_to: ${item.reply_to_message_id ?? 'none'} backreplies: ${item.direct_backreply_count}`,
-      `text: ${item.text_preview}`,
-    ].join('\n'),
+      `msg ${item.saved_peer_id}:${item.message_id}`,
+      `date=${item.date}`,
+      `self=${toFlag(item.from_self)}`,
+      `fwd=${toFlag(item.forwarded)}`,
+      `reply=${item.reply_to_message_id ?? '-'}`,
+      `kids=${item.direct_backreply_count}`,
+      `text=${JSON.stringify(item.text_preview)}`,
+    ].join(' '),
   )
 
-  return [header, ...blocks, page.next_cursor ? `next_cursor: ${page.next_cursor}` : ''].filter(Boolean).join('\n\n')
+  return [header, ...blocks].join('\n')
+}
+
+export function formatInspectResult(result: MessageInspectResult): string {
+  const lines = [
+    [
+      `msg ${result.selector.resolved}`,
+      `date=${result.target.date}`,
+      `self=${toFlag(result.target.from_self)}`,
+      `fwd=${toFlag(result.target.forwarded)}`,
+      `reply=${result.target.reply.exists ? 1 : 0}`,
+      `kids=${result.target.thread.direct_backreply_count}`,
+      `desc=${result.target.thread.descendant_count_hint ?? 0}`,
+      `media=${result.target.media_summary ?? '-'}`,
+      `default_self=${toFlag(result.selector.defaulted_to_self)}`,
+    ].join(' '),
+    `txt ${JSON.stringify(result.target.text)}`,
+  ]
+
+  if (result.target.forward_origin) {
+    lines.push(
+      `origin ${formatRefLike({
+        saved_peer_id: result.target.forward_origin.saved_peer_id ?? '-',
+        message_id: result.target.forward_origin.message_id ?? 0,
+        text_preview: result.target.forward_origin.title ?? '',
+      }, result.target.forward_origin.message_id === null)}`,
+    )
+  }
+
+  if (result.expansions.reply_parent) {
+    lines.push(`reply ${formatMessageRef(result.expansions.reply_parent)}`)
+  }
+
+  if (result.expansions.chronology) {
+    for (const item of result.expansions.chronology.before) {
+      lines.push(`before ${formatMessageRef(item)}`)
+    }
+    for (const item of result.expansions.chronology.after) {
+      lines.push(`after ${formatMessageRef(item)}`)
+    }
+  }
+
+  if (result.expansions.backreplies) {
+    for (const item of result.expansions.backreplies) {
+      lines.push(`kid ${formatMessageRef(item)}`)
+    }
+  }
+
+  if (result.expansions.thread) {
+    lines.push(
+      `thread root=${result.expansions.thread.root.saved_peer_id}:${result.expansions.thread.root.message_id} depth=${result.expansions.thread.depth_limit} truncated=${toFlag(result.expansions.thread.truncated)}`,
+    )
+    for (const node of result.expansions.thread.nodes) {
+      renderThreadNode(node, lines)
+    }
+  }
+
+  for (const note of result.notes) {
+    lines.push(`note ${JSON.stringify(note)}`)
+  }
+
+  return lines.join('\n')
 }
 
 export function formatContextBundle(bundle: MessageContextBundle): string {
@@ -146,4 +212,30 @@ function renderNode(node: ThreadInspectNode, prefix: string, isLast: boolean, li
   node.children.forEach((child, index) => {
     renderNode(child, nextPrefix, index === node.children.length - 1, lines)
   })
+}
+
+function renderThreadNode(
+  node: NonNullable<MessageInspectResult['expansions']['thread']>['nodes'][number],
+  lines: string[],
+): void {
+  lines.push(`thr depth=${node.depth} ${formatMessageRef(node.message)}`)
+  node.children.forEach((child) => renderThreadNode(child, lines))
+}
+
+function formatMessageRef(
+  ref: Pick<MessageListItem, 'message_id' | 'saved_peer_id' | 'text_preview'>,
+): string {
+  return formatRefLike(ref, false)
+}
+
+function formatRefLike(
+  ref: { saved_peer_id: string, message_id: number, text_preview: string },
+  omitMessageId: boolean,
+): string {
+  const selector = omitMessageId ? ref.saved_peer_id : `${ref.saved_peer_id}:${ref.message_id}`
+  return `${selector} ${JSON.stringify(ref.text_preview)}`
+}
+
+function toFlag(value: boolean): 0 | 1 {
+  return value ? 1 : 0
 }

@@ -90,14 +90,10 @@ The production-critical live commands validated so far are:
 - `tgsm auth login`
 - `tgsm auth status`
 - `tgsm sync`
-- `tgsm saved-dialogs list`
 - `tgsm messages list`
-- `tgsm messages get <id>`
-- `tgsm threads inspect <id>`
-
-`messages context` exists and is implemented, but it has not been stressed to the same level as the commands above.
-
-Operational note: `messages context` currently returns the same hybrid context bundle shape as `messages get`; it is a separate command surface today, not a separate retrieval model.
+- `tgsm messages get <selector>`
+- `tgsm messages get <selector> --with chronology --with reply_parent --with backreplies`
+- `tgsm messages get <selector> --with thread --thread-depth <n>`
 
 ## Debugging
 

@@ -122,7 +122,8 @@ Required fields:
 
 ### `MessageContextBundle`
 
-The canonical response shape for `messages get` and `messages context`.
+This remains the canonical hybrid context shape inside the core library.
+It is no longer the primary CLI contract.
 
 Required fields:
 
@@ -193,10 +194,9 @@ If one message qualifies for multiple roles, it appears once and lists multiple 
 
 ## Dialog Scope Rules
 
-- `saved-dialogs list` enumerates all saved dialogs known to the cache.
 - `messages list` defaults to all saved dialogs unless constrained.
 - JSON responses must state whether the scope is all dialogs or one dialog.
-- Human output must make dialog scope visible without forcing the reader to inspect JSON.
+- JSON message results must always expose explicit dialog identity through `saved_peer_id`, even when text-mode selector parsing defaults to `self`.
 
 ## Missing Reference Rules
 
@@ -217,14 +217,12 @@ If one message qualifies for multiple roles, it appears once and lists multiple 
 
 ## CLI Endpoints Bound To This Model
 
-- `tgsm saved-dialogs list`
 - `tgsm messages list`
-- `tgsm messages get <id>`
-- `tgsm messages context <id>`
-- `tgsm threads inspect <id>`
+- `tgsm messages get <selector>`
 - `tgsm sync`
 
-`tgsm threads inspect <id>` is thread-focused traversal over the same reply graph. It must not redefine message identity or context semantics separately from this document.
+The CLI now exposes one selector-based retrieval command and turns chronology, reply-parent, backreply, and thread traversal into optional expansions on that command.
+Those expansions still consume the same underlying read model defined here.
 
 ## Scenarios This Model Must Support
 

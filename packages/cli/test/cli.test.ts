@@ -85,7 +85,7 @@ describe('tgsm CLI fixture backend', () => {
     expect(shown.stdout).toContain('Fixture Account')
   })
 
-  test('sync + saved-dialogs list --json returns structured dialogs', async () => {
+  test('messages list --json returns structured items after sync', async () => {
     const { fixturePath, homeDir } = await setupFixture()
 
     await expectCliSuccess([
@@ -106,16 +106,16 @@ describe('tgsm CLI fixture backend', () => {
       fixturePath,
       '--home',
       homeDir,
-      'saved-dialogs',
+      'messages',
       'list',
     ])
 
-    const dialogs = JSON.parse(listed.stdout) as FixtureFile['dialogs']
-    expect(dialogs).toHaveLength(2)
-    expect(dialogs.map((dialog) => dialog.saved_peer_id).sort()).toEqual(['channel:42', 'self'])
+    const page = JSON.parse(listed.stdout) as { items: FixtureFile['messages'] }
+    expect(page.items.length).toBeGreaterThan(0)
+    expect(page.items[0]?.saved_peer_id).toBeDefined()
   })
 
-  test('messages get default text output includes context sections', async () => {
+  test('messages get defaults bare ids to self and emits compact agent-oriented text', async () => {
     const { fixturePath, homeDir } = await setupFixture()
 
     await expectCliSuccess([
@@ -140,14 +140,12 @@ describe('tgsm CLI fixture backend', () => {
       '2',
     ])
 
-    expect(shown.stdout).toContain('MESSAGE #2')
-    expect(shown.stdout).toContain('reply_to:')
-    expect(shown.stdout).toContain('backreplies:')
-    expect(shown.stdout).toContain('chronology_before:')
-    expect(shown.stdout).toContain('chronology_after:')
+    expect(shown.stdout).toContain('msg self:2')
+    expect(shown.stdout).toContain('default_self=1')
+    expect(shown.stdout).toContain('txt "This video is great https://example.com/crdt"')
   })
 
-  test('messages get renders forwarded origin when known', async () => {
+  test('messages get can expand chronology, reply parent, and backreplies with --with', async () => {
     const { fixturePath, homeDir } = await setupFixture()
 
     await expectCliSuccess([
@@ -169,13 +167,52 @@ describe('tgsm CLI fixture backend', () => {
       homeDir,
       'messages',
       'get',
-      '10',
-      '--dialog',
-      'channel:42',
+      'self:2',
+      '--with',
+      'chronology',
+      '--with',
+      'reply_parent',
+      '--with',
+      'backreplies',
     ])
 
-    expect(shown.stdout).toContain('forwarded: true')
-    expect(shown.stdout).toContain('origin: Interesting Channel channel:42 #99')
+    expect(shown.stdout).toContain('reply self:1')
+    expect(shown.stdout).toContain('before self:1')
+    expect(shown.stdout).toContain('kid self:3')
+  })
+
+  test('messages get can request a bounded thread expansion', async () => {
+    const { fixturePath, homeDir } = await setupFixture()
+
+    await expectCliSuccess([
+      '--backend',
+      'fixture',
+      '--fixture',
+      fixturePath,
+      '--home',
+      homeDir,
+      'sync',
+    ])
+
+    const shown = await expectCliSuccess([
+      '--backend',
+      'fixture',
+      '--fixture',
+      fixturePath,
+      '--home',
+      homeDir,
+      'messages',
+      'get',
+      'self:1',
+      '--with',
+      'thread',
+      '--thread-depth',
+      '1',
+    ])
+
+    expect(shown.stdout).toContain('thread root=self:1 depth=1')
+    expect(shown.stdout).toContain('thr depth=0 self:1')
+    expect(shown.stdout).toContain('thr depth=1 self:2')
   })
 })
 

@@ -9,17 +9,15 @@ import {
   TelegramSource,
   ensureAccountDir,
   getCachePath,
-  type GetMessageOptions,
   type ListMessagesOptions,
+  type MessageInspectExpansion,
   type TgsmSourceAdapter,
 } from '@tgsm/core'
 import {
   formatAuthStatus,
-  formatContextBundle,
+  formatInspectResult,
   formatMessagesPage,
-  formatSavedDialogs,
   formatSyncResult,
-  formatThread,
 } from './format'
 import { TGSM_VERSION } from './version'
 
@@ -96,17 +94,6 @@ program.command('sync').action(async (_, command) => {
   })
 })
 
-program
-  .command('saved-dialogs')
-  .description('Saved dialog commands')
-  .addCommand(
-    new Command('list').action(async (_, command) => {
-      await withService(command.optsWithGlobals(), async (service, options) => {
-        emit(await service.listSavedDialogs(), options, formatSavedDialogs)
-      })
-    }),
-  )
-
 const messages = program.command('messages').description('Message commands')
 
 messages
@@ -129,46 +116,22 @@ messages
 
 messages
   .command('get')
-  .argument('<id>')
-  .option('--dialog <savedPeerId>')
-  .action(async (id, commandOptions, command) => {
+  .argument('<selector>')
+  .option('--with <feature>', 'Repeatable: chronology, reply_parent, backreplies, thread', collectWithOption, [])
+  .option('--before <number>', 'Chronology messages before target', '5')
+  .option('--after <number>', 'Chronology messages after target', '5')
+  .option('--thread-depth <number>', 'Thread depth limit when `--with thread` is used', '1')
+  .action(async (selector, commandOptions, command) => {
     await withService(command.optsWithGlobals(), async (service, options) => {
-      const result = await service.getMessage(Number(id), {
-        dialog: commandOptions.dialog,
-      } satisfies GetMessageOptions)
-      emit(result, options, formatContextBundle)
+      const result = await service.inspectMessage(selector, {
+        with: normalizeWithOptions(commandOptions.with),
+        before: Number(commandOptions.before),
+        after: Number(commandOptions.after),
+        thread_depth: Number(commandOptions.threadDepth),
+      })
+      emit(result, options, formatInspectResult)
     })
   })
-
-messages
-  .command('context')
-  .argument('<id>')
-  .option('--dialog <savedPeerId>')
-  .action(async (id, commandOptions, command) => {
-    await withService(command.optsWithGlobals(), async (service, options) => {
-      const result = await service.getContext(Number(id), {
-        dialog: commandOptions.dialog,
-      } satisfies GetMessageOptions)
-      emit(result, options, formatContextBundle)
-    })
-  })
-
-program
-  .command('threads')
-  .description('Thread commands')
-  .addCommand(
-    new Command('inspect')
-      .argument('<id>')
-      .option('--dialog <savedPeerId>')
-      .action(async (id, commandOptions, command) => {
-        await withService(command.optsWithGlobals(), async (service, options) => {
-          const result = await service.inspectThread(Number(id), {
-            dialog: commandOptions.dialog,
-          } satisfies GetMessageOptions)
-          emit(result, options, formatThread)
-        })
-      }),
-  )
 
 void main()
 
@@ -310,6 +273,43 @@ async function main(): Promise<void> {
 
   await flushStreams()
   process.exit(exitCode)
+}
+
+function collectWithOption(value: string, previous: string[]): string[] {
+  return previous.concat(value.split(',').map((item) => item.trim()).filter(Boolean))
+}
+
+function normalizeWithOptions(values: string[]): MessageInspectExpansion[] {
+  const normalized = new Set<MessageInspectExpansion>()
+
+  for (const value of values) {
+    if (value === 'all') {
+      normalized.add('chronology')
+      normalized.add('reply_parent')
+      normalized.add('backreplies')
+      normalized.add('thread')
+      continue
+    }
+
+    if (
+      value === 'chronology' ||
+      value === 'reply_parent' ||
+      value === 'backreplies' ||
+      value === 'thread'
+    ) {
+      normalized.add(value)
+      continue
+    }
+
+    throw new TgsmError({
+      code: 'INVALID_WITH_OPTION',
+      message: `Unknown --with feature ${JSON.stringify(value)}.`,
+      retryable: false,
+      suggestion: 'Use chronology, reply_parent, backreplies, thread, or all.',
+    })
+  }
+
+  return [...normalized]
 }
 
 async function flushStreams(): Promise<void> {

@@ -37,27 +37,13 @@ Current implementation note:
 ### Example Shape: `messages get`
 
 ```text
-MESSAGE #42
-dialog: self
-date: 2025-01-15T10:30:00Z
-from_self: true
-thread: direct_backreplies=2 descendant_hint=4
-
-text:
-this yt video on CRDT is amazing
-
-reply_to:
-- #38 need to learn more about distributed...
-
-backreplies:
-- #45 ok so the key insight is...
-- #47 actually this conflicts with...
-
-chronology_before:
-- #41 also check this paper on...
-
-chronology_after:
-- #43 unrelated: need to buy groceries
+msg self:42 date=2025-01-15T10:30:00Z self=1 fwd=0 reply=1 kids=2 desc=4 media=-
+txt "this yt video on CRDT is amazing"
+reply self:38 "need to learn more about distributed..."
+kid self:45 "ok so the key insight is..."
+kid self:47 "actually this conflicts with..."
+before self:41 "also check this paper on..."
+after self:43 "unrelated: need to buy groceries"
 ```
 
 ## JSON Mode
@@ -81,6 +67,7 @@ chronology_after:
 - commands should follow `resource action`
 - error responses should suggest the next useful command where appropriate
 - any command returning scoped results must make its scope obvious
+- bare numeric selectors may default to `self:<message_id>` in text mode, but JSON must still emit the explicit `saved_peer_id`
 
 ## Filtering And Projection
 

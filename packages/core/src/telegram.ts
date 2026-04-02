@@ -1,7 +1,7 @@
 import path from 'node:path'
 import { createInterface } from 'node:readline/promises'
 import { readFile, rm, writeFile } from 'node:fs/promises'
-import { MemoryStorage, TelegramClient, getMarkedPeerId, networkMiddlewares, type tl } from '@mtcute/node'
+import { MemoryStorage, TelegramClient, getMarkedPeerId, networkMiddlewares, tl } from '@mtcute/node'
 import { TgsmCryptoProvider } from './crypto'
 import { TgsmError } from './errors'
 import { getTelegramConfigPath, getTelegramSessionPath } from './paths'

@@ -69,4 +69,28 @@ describe('TgsmService with fixture backend', () => {
       code: 'AMBIGUOUS_MESSAGE_ID',
     } satisfies Partial<TgsmError>)
   })
+
+  test('inspectMessage defaults bare ids to self selectors when possible', async () => {
+    const result = await service.inspectMessage('2')
+
+    expect(result.selector.resolved).toBe('self:2')
+    expect(result.selector.defaulted_to_self).toBe(true)
+    expect(result.target.saved_peer_id).toBe('self')
+  })
+
+  test('inspectMessage expands only requested retrieval surfaces', async () => {
+    const result = await service.inspectMessage('self:2', {
+      with: ['chronology', 'reply_parent', 'backreplies', 'thread'],
+      before: 1,
+      after: 1,
+      thread_depth: 1,
+    })
+
+    expect(result.expansions.reply_parent?.message_id).toBe(1)
+    expect(result.expansions.backreplies?.map((item) => item.message_id)).toEqual([3, 8])
+    expect(result.expansions.chronology?.before).toHaveLength(1)
+    expect(result.expansions.chronology?.after).toHaveLength(1)
+    expect(result.expansions.thread?.depth_limit).toBe(1)
+    expect(result.expansions.thread?.root.message_id).toBe(1)
+  })
 })

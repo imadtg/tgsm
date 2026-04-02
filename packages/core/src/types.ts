@@ -93,6 +93,47 @@ export interface MessageContextBundle {
   notes: string[]
 }
 
+export type MessageInspectExpansion = 'chronology' | 'reply_parent' | 'backreplies' | 'thread'
+
+export interface MessageSelectorResolution {
+  input: string
+  resolved: string
+  defaulted_to_self: boolean
+}
+
+export interface MessageChronologyExpansion {
+  before: MessageRef[]
+  after: MessageRef[]
+  before_count: number
+  after_count: number
+}
+
+export interface MessageThreadNode {
+  message: MessageRef
+  depth: number
+  children: MessageThreadNode[]
+}
+
+export interface MessageThreadExpansion {
+  root: MessageRef
+  depth_limit: number
+  truncated: boolean
+  nodes: MessageThreadNode[]
+}
+
+export interface MessageInspectResult {
+  target: MessageEnvelope
+  dialog: SavedDialogSummary
+  selector: MessageSelectorResolution
+  expansions: {
+    chronology?: MessageChronologyExpansion
+    reply_parent?: MessageRef | null
+    backreplies?: MessageRef[]
+    thread?: MessageThreadExpansion
+  }
+  notes: string[]
+}
+
 export interface MessageListItem {
   message_id: number
   saved_peer_id: string
@@ -200,6 +241,10 @@ export interface ListMessagesOptions {
 
 export interface GetMessageOptions {
   dialog?: string
+  with?: MessageInspectExpansion[]
+  before?: number
+  after?: number
+  thread_depth?: number
 }
 
 export interface TgsmSourceAdapter {

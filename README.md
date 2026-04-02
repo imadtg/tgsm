@@ -9,19 +9,19 @@ It is built for two modes of use:
 - real Telegram access through MTProto
 - fixture-backed local testing for development and agent workflows
 
-The first public release focuses on read paths only: sync, saved dialogs, message listing, context reconstruction, and thread inspection.
+The current read surface focuses on sync, message listing, selector-based retrieval, and optional expansion of chronology, reply/backreply, and thread structure.
 
 ## Features
 
 - Sync Saved Messages into a local cache
 - Treat Saved Messages as dialog-aware, not only as a flat self-chat
-- List saved dialogs and messages
-- Inspect a message with:
+- List messages
+- Inspect one message by selector or bare self-defaulting ID
+- Expand a retrieval with optional:
   - nearby chronology
   - direct reply parent
   - direct backreplies
-  - thread depth hints
-- Inspect a thread tree
+  - bounded thread structure
 - Emit compact text by default, or exact JSON with `--json`
 - Run against fixture snapshots for testing
 
@@ -77,11 +77,10 @@ tgsm sync
 ### 3. Explore
 
 ```bash
-tgsm saved-dialogs list
 tgsm messages list
 tgsm messages get 42
-tgsm messages context 42
-tgsm threads inspect 42
+tgsm messages get 42 --with chronology --with reply_parent --with backreplies
+tgsm messages get self:42 --with thread --thread-depth 2
 ```
 
 ### 4. Use JSON mode when needed
@@ -104,12 +103,14 @@ tgsm auth status
 
 ```bash
 tgsm sync
-tgsm saved-dialogs list
 tgsm messages list [--dialog <saved_peer_id>] [--search <query>] [--limit <n>] [--cursor <cursor>]
-tgsm messages get <id> [--dialog <saved_peer_id>]
-tgsm messages context <id> [--dialog <saved_peer_id>]
-tgsm threads inspect <id> [--dialog <saved_peer_id>]
+tgsm messages get <selector> [--with <chronology|reply_parent|backreplies|thread|all>] [--before <n>] [--after <n>] [--thread-depth <n>]
 ```
+
+Selectors:
+
+- bare numeric IDs default to `self:<message_id>` when possible
+- explicit selectors use `<saved_peer_id>:<message_id>`, for example `self:42` or `channel:2167875895:36649`
 
 ### Global Flags
 
@@ -267,14 +268,13 @@ tgsm --debug sync
 
 ## Status
 
-Implemented in the first public pass:
+Implemented in the current pass:
 
 - auth
 - sync
-- saved-dialog listing
 - message listing
-- message context retrieval
-- thread inspection
+- selector-based message retrieval
+- optional chronology/reply/backreply/thread expansion
 - fixture backend
 - tests for core and CLI
 
